@@ -367,6 +367,59 @@ nav .fab svg{width:26px;height:26px}
   .rbar{display:none}
   .paper{box-shadow:none;margin:0;max-width:none}
 }
+
+/* ===================== responsive: tablet & desktop ===================== */
+.d-only,.lbl-d{display:none}
+.cols2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 26px;align-items:start}
+.cols2>div{min-width:0}
+@media (min-width:600px) and (max-width:899px){
+  .app{max-width:760px;padding:0 24px}
+  .tiles{grid-template-columns:repeat(6,1fr)}
+  .kpis{grid-template-columns:repeat(4,1fr)}
+  nav .in-nav{max-width:560px}
+}
+@media (min-width:900px){
+  body{padding-bottom:40px;padding-right:270px}
+  .app{max-width:1200px;padding:0 32px}
+  header{padding-top:26px}
+  header [data-v="more"]{display:none}
+  nav{top:0;bottom:0;right:0;left:auto;width:270px;padding:16px 0 16px 16px}
+  nav .in-nav{height:100%;max-width:none;display:flex;flex-direction:column;align-items:stretch;gap:2px;padding:14px 12px;border-radius:24px;overflow-y:auto;scrollbar-width:thin}
+  nav button,nav .nav-brand{flex-direction:row;justify-content:flex-start;gap:12px;font-size:14px;padding:10px 14px;border-radius:13px;width:100%;flex:0 0 auto}
+  nav button:hover{background:var(--surface2);color:var(--text)}
+  nav button.on{background:color-mix(in srgb,var(--gold) 15%,transparent)}
+  nav button svg{width:20px;height:20px}
+  nav .nav-brand{order:-2;display:flex;align-items:center;cursor:pointer;padding:6px 8px 16px;margin-bottom:8px;border-bottom:1px solid var(--line);border-radius:0}
+  nav .nav-brand b{font-family:'Noto Kufi Arabic',sans-serif;font-size:19px;display:block;color:var(--text)}
+  nav .nav-brand small{font-size:11px;color:var(--muted)}
+  nav .fabbtn{order:-1;background:var(--goldtext)!important;color:#1b1a14!important;justify-content:center;font-weight:700;margin:2px 0 12px;box-shadow:var(--glow)}
+  nav .fabbtn:hover{filter:brightness(1.07);transform:translateY(-1px)}
+  nav .fab{width:auto;height:auto;margin:0;background:none;box-shadow:none;color:inherit;display:inline-grid}
+  nav .fab:hover{transform:none}
+  nav .fab svg{width:20px;height:20px}
+  .lbl-d{display:inline}
+  .d-only{display:flex}
+  nav .nav-sep{font-size:11px;color:var(--muted);font-weight:700;padding:14px 14px 4px;letter-spacing:.3px}
+  .sheet-wrap{align-items:center}
+  .sheet{border-radius:24px;max-width:580px;max-height:88vh;padding-bottom:24px}
+  .grab{display:none}
+  .toast{bottom:34px}
+  .tiles{grid-template-columns:repeat(auto-fill,minmax(118px,1fr))}
+  .kpis{grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}
+  .wallets{flex-wrap:wrap;overflow:visible;margin:0;padding:6px 0 14px}
+  .wallets .w{flex:1 1 220px;max-width:340px}
+  .fam-list{flex-wrap:wrap;overflow:visible;margin:0;padding:4px 0 10px}
+  .fam-list .card{flex:1 1 190px}
+  .hero{padding:28px 30px 24px}
+  .hero .big{font-size:44px}
+  .stats{gap:12px}
+  .stat b{font-size:16px}
+  .month{max-width:520px;margin-inline:auto;margin-bottom:18px}
+  .bld{grid-template-columns:repeat(auto-fill,minmax(78px,1fr))}
+  .page-title h1{font-size:26px}
+}
+@media (min-width:1400px){.app{max-width:1320px}}
+@media print{nav{display:none!important}body{padding-right:0!important}}
 </style>
 </head>
 <body>
@@ -382,9 +435,10 @@ nav .fab svg{width:26px;height:26px}
 </div>
 
 <nav><div class="in-nav">
+  <div class="nav-brand d-only" data-act="go" data-v="home"><div class="logo">خ</div><div><b>خِزانة</b><small>إدارة الأموال</small></div></div>
   <button data-act="go" data-v="home" data-nav="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>الرئيسية</button>
   <button data-act="go" data-v="wallets" data-nav="wallets"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg>المحافظ</button>
-  <button data-act="add" aria-label="إضافة حركة"><span class="fab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg></span></button>
+  <button class="fabbtn" data-act="add" aria-label="إضافة حركة"><span class="fab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg></span><span class="lbl-d">حركة جديدة</span></button>
   <button data-act="go" data-v="jam" data-nav="jam"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M15 14.5c3 0 6 1.8 6 5"/></svg>الجمعيات</button>
   <button data-act="go" data-v="prop" data-nav="prop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 21V5l8-3 8 3v16M9 21v-4h6v4M8 8h2M14 8h2M8 12h2M14 12h2"/></svg>العقارات</button>
 </div></nav>
@@ -633,11 +687,24 @@ function go(v,p,keep){if(!keep&&(VIEW!==v||PARAM!==p))HIST.push([VIEW,PARAM]);VI
 function render(anim){
   const fn=V[VIEW]||V.home;let html;
   try{html=fn(PARAM)}catch(err){console.error(err);html=`<div class="card flat empty"><div class="ei">⚠</div><p>حدث خطأ في عرض هذه الصفحة<br><small>${esc(err.message)}</small></p><button class="mini-btn" data-act="go" data-v="home">الرئيسية</button></div>`}
-  const r=$('#view');r.innerHTML=html;
+  const r=$('#view');r.innerHTML=html;layoutWide(r);
   r.style.animation='none';void r.offsetWidth;r.style.animation=anim?'':'none';
-  $$('nav [data-nav]').forEach(b=>b.classList.toggle('on',b.dataset.nav===NAV_OF[VIEW]));
+  $$('nav [data-nav]').forEach(b=>b.classList.toggle('on',b.dataset.nav===(NAV_OF[VIEW]||VIEW)));
   if(anim)animate(r,true);else finalize(r);bindFx(r);
 }
+/* wide screens: keep header blocks full width, spread the remaining sections over two balanced columns */
+const WIDE_FULL=['page-title','back','month','hero','banner','note','seg','w','kpis'];
+let WIDE=null;
+function layoutWide(r){WIDE=r.clientWidth>=840;if(!WIDE)return;
+  const kids=[...r.children];if(kids.length<3)return;
+  const isFull=el=>WIDE_FULL.some(c=>el.classList.contains(c))||!!el.querySelector(':scope > .wallets, :scope > .tiles, :scope > .btn');
+  let i=0;while(i<kids.length&&isFull(kids[i]))i++;
+  const rest=kids.slice(i);if(rest.filter(k=>!isFull(k)).length<2)return;
+  const wrap=document.createElement('div'),c1=document.createElement('div'),c2=document.createElement('div');
+  wrap.className='cols2';wrap.append(c1,c2);r.insertBefore(wrap,rest[0]);const tail=[];
+  rest.forEach(el=>{if(isFull(el)){tail.push(el);return}(c1.offsetHeight<=c2.offsetHeight?c1:c2).appendChild(el)});
+  tail.forEach(el=>r.appendChild(el))}
+let _rz;window.addEventListener('resize',()=>{clearTimeout(_rz);_rz=setTimeout(()=>{const r=$('#view');if(r&&(r.clientWidth>=840)!==WIDE)render(false)},180)});
 document.addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(!a)return;
   if(a.closest('#frm')&&a.dataset.act!=='formDanger')return;
   e.preventDefault();const f=ACT[a.dataset.act];if(f)f(a.dataset,a,e)});
@@ -891,9 +958,8 @@ V.wallets=()=>{
     <div class="stats"><div class="stat"><small>بالدينار</small><b>${cnt(sum(S.wallets.filter(w=>w.currency==='IQD'),bal))}</b></div><div class="stat"><small>بالدولار</small><b>${cnt(sum(S.wallets.filter(w=>w.currency==='USD'),bal),{pre:'$',dec:2})}</b></div><div class="stat"><small>سعر الصرف</small><b>${nm(fmtN(S.settings.rate))}</b></div></div></div>`;
   if(!S.wallets.length)return h+'<div class="sec">'+empty('أضف بطاقاتك ومحافظك (كي كارد، ماستر، زين كاش، كاش...) لتبدأ','walletNew','إضافة محفظة')+'</div>';
   h+=`<div class="sec wlist">${S.wallets.map(w=>walletCard(w,range)).join('')}</div>`;
-  h+=monthBar().replace('class="month"','class="month" style="margin-top:22px"');
   const [f,t]=range;
-  h+=sec('حركة كل محفظة هذا الشهر','',`<div class="card">${barChart(S.wallets.map(w=>({l:w.name.split('·')[0].trim().slice(0,9),v:[toIQD(sum(S.tx.filter(x=>inRange(x.date,f,t)),x=>Math.max(0,walletDelta(x,w.id))),w.currency),toIQD(sum(S.tx.filter(x=>inRange(x.date,f,t)),x=>Math.max(0,-walletDelta(x,w.id))),w.currency)]})),[{name:'داخل',color:'var(--em)'},{name:'خارج',color:'var(--expense)'}])}</div>
+  h+=sec('حركة كل محفظة هذا الشهر','',`${monthBar()}<div class="card">${barChart(S.wallets.map(w=>({l:w.name.split('·')[0].trim().slice(0,9),v:[toIQD(sum(S.tx.filter(x=>inRange(x.date,f,t)),x=>Math.max(0,walletDelta(x,w.id))),w.currency),toIQD(sum(S.tx.filter(x=>inRange(x.date,f,t)),x=>Math.max(0,-walletDelta(x,w.id))),w.currency)]})),[{name:'داخل',color:'var(--em)'},{name:'خارج',color:'var(--expense)'}])}</div>
     <div class="card"><div class="row" style="margin-bottom:10px"><b>توزيع الأموال</b><span class="muted">بالدينار</span></div>${donut(S.wallets.map(w=>({l:w.name,v:Math.max(0,toIQD(bal(w),w.currency)),c:w.color})),{center:'الأرصدة'})}</div>`);
   return h};
 V.wallet=id=>{
@@ -1858,7 +1924,7 @@ V.set=()=>{const st=S.settings,o=(k,opts)=>`<div class="opt">${opts.map(([v,l])=
     <div class="btns"><button class="btn gold" data-act="backup">⬇ تصدير نسخة</button><button class="btn ghost" data-act="restore">⬆ استيراد نسخة</button></div>
     <div class="btns"><button class="btn ghost" data-act="loadDemo">بيانات تجريبية</button><button class="btn danger" data-act="wipe">مسح كل البيانات</button></div>
     <input type="file" id="restoreFile" accept=".json,application/json" style="display:none"></div>`)}
-  <p class="note">${APP} · الإصدار 1.1 · يعمل بدون إنترنت بعد أول فتح</p>`};
+  <p class="note">${APP} · الإصدار 1.0 · يعمل بدون إنترنت بعد أول فتح</p>`};
 ACT.setOpt=d=>{S.settings[d.k]=d.v;save();if(d.k==='theme')applyTheme();render(false)};
 document.addEventListener('change',e=>{
   if(e.target.id==='setRate'){const r=toNum(e.target.value);if(r>0){S.settings.rate=r;save();toast('حُدّث سعر الصرف ✓')}}
@@ -1879,7 +1945,10 @@ ACT.loadDemo=()=>{if(!confirm('استبدال بياناتك ببيانات تج
    init
    ===================================================================== */
 function greet(){const h=new Date().getHours();$('#greet').textContent=h<12?'صباح الخير':h<17?'نهارك سعيد':'مساء الخير';$('#uname').textContent=S.settings.user||''}
-load();VM=NOWK().split('-').map(Number);applyTheme();greet();render(true);
+function buildSideNav(){const L=[['tx','الحركات'],['cats','الفئات'],['fam','العائلة والأصدقاء'],['commit','الالتزامات'],['goals','الأهداف'],['debts','الديون'],['inv','الاستثمارات'],['sadaqa','الصدقات'],['zakat','الزكاة']];
+  $('nav .in-nav').insertAdjacentHTML('beforeend',`<div class="nav-sep d-only">الأقسام</div>${L.map(([v,l])=>`<button class="d-only" data-act="go" data-v="${v}" data-nav="${v}">${svgI(v)}${l}</button>`).join('')}
+    <div class="nav-sep d-only">أخرى</div><button class="d-only" data-act="report" data-s="all">${svgI('rep')}التقرير الشامل</button><button class="d-only" data-act="go" data-v="set" data-nav="set">${svgI('set')}الإعدادات</button>`)}
+load();VM=NOWK().split('-').map(Number);applyTheme();greet();buildSideNav();render(true);
 matchMedia('(prefers-color-scheme: dark)').addEventListener&&matchMedia('(prefers-color-scheme: dark)').addEventListener('change',applyTheme);
 if('serviceWorker' in navigator&&/^https?:/.test(location.protocol))navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>

@@ -8,6 +8,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="خِزانة">
+<meta name="author" content="حيدر نصيف">
+<meta name="description" content="خِزانة — إدارة الأموال الشخصية والعائلية · تصميم وتطوير حيدر نصيف">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
@@ -408,6 +410,9 @@ nav .fab svg{width:26px;height:26px}
   .kpis{grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}
   .wallets{flex-wrap:wrap;overflow:visible;margin:0;padding:6px 0 14px}
   .wallets .w{flex:1 1 220px;max-width:340px}
+  .wallets .w.add{flex:0 0 150px;min-height:130px}
+  nav .in-nav{gap:0}
+  nav button{padding:9px 14px}
   .fam-list{flex-wrap:wrap;overflow:visible;margin:0;padding:4px 0 10px}
   .fam-list .card{flex:1 1 190px}
   .hero{padding:28px 30px 24px}
@@ -418,6 +423,17 @@ nav .fab svg{width:26px;height:26px}
   .bld{grid-template-columns:repeat(auto-fill,minmax(78px,1fr))}
   .page-title h1{font-size:26px}
 }
+#splash{position:fixed;inset:0;z-index:200;display:grid;place-items:center;background:radial-gradient(500px 400px at 50% 40%,#123f31,#050c0a);transition:opacity .6s}
+#splash.out{opacity:0;pointer-events:none}
+.sp-in{text-align:center;color:#f6efdc;animation:pop .7s cubic-bezier(.2,.8,.2,1) both}
+.sp-in .logo{width:92px;height:92px;font-size:44px;border-radius:28px;margin:0 auto 16px;background:linear-gradient(120deg,#b8892f,#f6dc94 45%,#c99a3a);box-shadow:0 0 50px rgba(243,214,138,.35)}
+.sp-in h1{font-family:'Noto Kufi Arabic',sans-serif;font-size:34px;background:linear-gradient(120deg,#d9b465,#fff1c4 45%,#d9b465);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sp-in p{opacity:.8;margin-top:4px}
+.sp-in small{display:block;margin-top:34px;font-size:12px;color:#d9b465;opacity:.85}
+.note.sign{color:var(--gold);font-weight:600}
+.note.sign small{color:var(--muted);font-weight:400}
+.nav-sign{margin-top:auto;padding:16px 14px 4px;border-top:1px solid var(--line);font-size:11px;color:var(--muted);line-height:1.8;cursor:pointer;flex-direction:column}
+.nav-sign b{color:var(--gold)}
 @media (min-width:1400px){.app{max-width:1320px}}
 @media print{nav{display:none!important}body{padding-right:0!important}}
 </style>
@@ -456,7 +472,9 @@ nav .fab svg{width:26px;height:26px}
 /* =====================================================================
    خِزانة — core: utils, state, aggregates, UI kit, charts, router
    ===================================================================== */
-const APP='خِزانة', LS='khizana_v1';
+const APP='خِزانة', LS='khizana_v1', APP_VER='1.3', APP_DATE='تشرين الأول 2026', DEV='حيدر نصيف', DEV_URL='https://github.com/PROG-ALONE';
+const SIGN=`${APP} · الإصدار ${APP_VER} · تصميم وتطوير ${DEV}`;
+try{console.log('%c'+APP+' v'+APP_VER+' — تصميم وتطوير '+DEV,'color:#c99a3a;font-weight:bold;font-size:13px')}catch(e){}
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
 const MONTHS=['كانون الثاني','شباط','آذار','نيسان','أيار','حزيران','تموز','آب','أيلول','تشرين الأول','تشرين الثاني','كانون الأول'];
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
@@ -928,7 +946,7 @@ V.home=()=>{
   // recent
   const rec=S.tx.filter(x=>inRange(x.date,f,t)).sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0).slice(0,6);
   h+=sec('آخر الحركات',lnk('الكل','go','data-v="tx"'),`<div class="card flat" style="padding:4px 14px">${rec.map(txRow).join('')||'<p class="muted" style="padding:14px 0;font-size:13px">لا توجد حركات في هذا الشهر</p>'}</div>`);
-  h+=`<div class="sec"><button class="btn gold" data-act="report" data-s="all">📄 التقرير الشامل لكل الأقسام</button></div><p class="note">${APP} · بياناتك محفوظة على جهازك فقط</p>`;
+  h+=`<div class="sec"><button class="btn gold" data-act="report" data-s="all">📄 التقرير الشامل لكل الأقسام</button></div><p class="note sign">${SIGN}<br><small>بياناتك محفوظة على جهازك فقط</small></p>`;
   return h};
 function envBlock(f,t){const cs=S.cats.filter(c=>c.kind==='expense'&&c.limit>0);
   if(!cs.length)return empty('حدّد مبلغاً شهرياً لكل فئة من صفحة الفئات ليظهر هنا','go','الفئات').replace('data-act="go"','data-act="go" data-v="cats"');
@@ -1879,7 +1897,7 @@ function paperHTML(R,f,t){
   const bars=s=>{if(!s.bars||!s.bars.length)return '';const mx=Math.max(...s.bars.map(b=>b[1]),1);return `<div style="margin:6px 0 12px">${s.bars.map(b=>`<div class="rp-bar"><span>${esc(b[0])}</span><i style="width:${(b[1]/mx*360).toFixed(0)}px"></i><b class="num">${money(b[1])}</b></div>`).join('')}</div>`};
   return `<div class="rp-head"><div class="rp-logo">خ</div><div><h1>${esc(R.title)}</h1><p>${periodText(f,t)} · أُنشئ في ${dLabelY(TODAY())} · ${esc(S.settings.user||'')} · ${APP}</p></div></div>
     ${R.sections.map(s=>`<div class="rp-sec"><h2>${esc(s.title)}</h2>${s.kv?`<div class="rp-kv">${s.kv.map(([k,v,ty])=>`<div><span>${esc(k)}</span><b>${cellF(v,ty)}</b></div>`).join('')}</div>`:''}${bars(s)}${tbl(s)}${s.note?`<p style="font-size:10px;color:#777;margin-top:4px">${esc(s.note)}</p>`:''}</div>`).join('')}
-    <div class="rp-foot">${APP} · المبالغ بالدينار العراقي ما لم يُذكر غير ذلك · سعر الصرف المعتمد ${fmtN(S.settings.rate)} د.ع للدولار</div>`}
+    <div class="rp-foot">المبالغ بالدينار العراقي ما لم يُذكر غير ذلك · سعر الصرف المعتمد ${fmtN(S.settings.rate)} د.ع للدولار<br><b style="color:#a67c26">${SIGN}</b></div>`}
 let CUR_REP=null;
 function showReport(R,f,t){CUR_REP={R,f,t};$('#rtitle').textContent=R.title;$('#rpaper').innerHTML=paperHTML(R,f,t);$('#rview').classList.add('on');$('#rview').scrollTop=0}
 ACT.rclose=()=>$('#rview').classList.remove('on');
@@ -1900,7 +1918,7 @@ ACT.rxlsx=async()=>{toast('جارٍ تجهيز Excel…');
       const ws=XLSX.utils.aoa_to_sheet(aoa);ws['!cols']=(s.cols||[[0],[0]]).map((c,i)=>({wch:i===0?24:16}));
       let name=strip(s.title).replace(/[\\/?*\[\]:]/g,' ').slice(0,28).trim()||('ورقة '+(si+1));while(used[name])name=name.slice(0,25)+' '+(++used[name]);used[name]=1;
       XLSX.utils.book_append_sheet(wb,ws,name)});
-    wb.Workbook={Views:[{RTL:true}]};XLSX.writeFile(wb,fileName('xlsx'));toast('تم إنشاء Excel ✓')}
+    wb.Workbook={Views:[{RTL:true}]};wb.Props={Title:R.title,Author:DEV,Company:APP,Comments:SIGN};XLSX.writeFile(wb,fileName('xlsx'));toast('تم إنشاء Excel ✓')}
   catch(e){console.error(e);toast(e.message||'تعذّر إنشاء ملف Excel')}};
 
 /* =====================================================================
@@ -1924,7 +1942,12 @@ V.set=()=>{const st=S.settings,o=(k,opts)=>`<div class="opt">${opts.map(([v,l])=
     <div class="btns"><button class="btn gold" data-act="backup">⬇ تصدير نسخة</button><button class="btn ghost" data-act="restore">⬆ استيراد نسخة</button></div>
     <div class="btns"><button class="btn ghost" data-act="loadDemo">بيانات تجريبية</button><button class="btn danger" data-act="wipe">مسح كل البيانات</button></div>
     <input type="file" id="restoreFile" accept=".json,application/json" style="display:none"></div>`)}
-  <p class="note">${APP} · الإصدار 1.0 · يعمل بدون إنترنت بعد أول فتح</p>`};
+  ${sec('حول التطبيق','',`<div class="card about"><div class="row" style="justify-content:flex-start;gap:14px"><div class="logo" style="width:56px;height:56px;font-size:26px;border-radius:17px">خ</div>
+    <div><b class="kufi" style="font-size:20px">${APP}</b><br><small class="muted">إدارة الأموال الشخصية والعائلية</small></div><span class="badge" style="margin-inline-start:auto">الإصدار ${nm(dg(APP_VER))}</span></div>
+    <div class="kv"><div><small>تصميم وتطوير</small><b>${DEV}</b></div><div><small>تاريخ الإصدار</small><b>${APP_DATE}</b></div>
+    <div style="grid-column:1/-1"><small>المصدر</small><b><a href="https://github.com/PROG-ALONE/khizana" target="_blank" rel="noopener" style="color:var(--gold);text-decoration:none" class="num">github.com/PROG-ALONE/khizana</a></b></div></div>
+    <p class="muted" style="font-size:12px;margin-top:12px;line-height:1.8">يعمل بدون إنترنت بعد أول فتح · بياناتك محفوظة على جهازك فقط ولا تُرسل لأي خادم.</p></div>`)}
+  <p class="note sign">© ${dg(new Date().getFullYear())} ${SIGN}</p>`};
 ACT.setOpt=d=>{S.settings[d.k]=d.v;save();if(d.k==='theme')applyTheme();render(false)};
 document.addEventListener('change',e=>{
   if(e.target.id==='setRate'){const r=toNum(e.target.value);if(r>0){S.settings.rate=r;save();toast('حُدّث سعر الصرف ✓')}}
@@ -1947,8 +1970,11 @@ ACT.loadDemo=()=>{if(!confirm('استبدال بياناتك ببيانات تج
 function greet(){const h=new Date().getHours();$('#greet').textContent=h<12?'صباح الخير':h<17?'نهارك سعيد':'مساء الخير';$('#uname').textContent=S.settings.user||''}
 function buildSideNav(){const L=[['tx','الحركات'],['cats','الفئات'],['fam','العائلة والأصدقاء'],['commit','الالتزامات'],['goals','الأهداف'],['debts','الديون'],['inv','الاستثمارات'],['sadaqa','الصدقات'],['zakat','الزكاة']];
   $('nav .in-nav').insertAdjacentHTML('beforeend',`<div class="nav-sep d-only">الأقسام</div>${L.map(([v,l])=>`<button class="d-only" data-act="go" data-v="${v}" data-nav="${v}">${svgI(v)}${l}</button>`).join('')}
-    <div class="nav-sep d-only">أخرى</div><button class="d-only" data-act="report" data-s="all">${svgI('rep')}التقرير الشامل</button><button class="d-only" data-act="go" data-v="set" data-nav="set">${svgI('set')}الإعدادات</button>`)}
-load();VM=NOWK().split('-').map(Number);applyTheme();greet();buildSideNav();render(true);
+    <div class="nav-sep d-only">أخرى</div><button class="d-only" data-act="report" data-s="all">${svgI('rep')}التقرير الشامل</button><button class="d-only" data-act="go" data-v="set" data-nav="set">${svgI('set')}الإعدادات</button>
+    <div class="nav-sign d-only" data-act="go" data-v="set">الإصدار ${APP_VER}<br>تصميم وتطوير <b>${DEV}</b></div>`)}
+function splash(){const s=document.createElement('div');s.id='splash';s.innerHTML=`<div class="sp-in"><div class="logo">خ</div><h1>${APP}</h1><p>إدارة الأموال بوعي</p><small>تصميم وتطوير ${DEV} · الإصدار ${APP_VER}</small></div>`;
+  document.body.appendChild(s);setTimeout(()=>s.classList.add('out'),1300);setTimeout(()=>s.remove(),1900)}
+load();VM=NOWK().split('-').map(Number);applyTheme();greet();buildSideNav();splash();render(true);
 matchMedia('(prefers-color-scheme: dark)').addEventListener&&matchMedia('(prefers-color-scheme: dark)').addEventListener('change',applyTheme);
 if('serviceWorker' in navigator&&/^https?:/.test(location.protocol))navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>

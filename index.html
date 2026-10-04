@@ -472,7 +472,7 @@ nav .fab svg{width:26px;height:26px}
 /* =====================================================================
    خِزانة — core: utils, state, aggregates, UI kit, charts, router
    ===================================================================== */
-const APP='خِزانة', LS='khizana_v1', APP_VER='1.3', APP_DATE='تشرين الأول 2026', DEV='حيدر نصيف', DEV_URL='https://github.com/PROG-ALONE';
+const APP='خِزانة', LS='khizana_v1', APP_VER='1.3.1', APP_DATE='تشرين الأول 2026', DEV='حيدر نصيف', DEV_URL='https://github.com/PROG-ALONE';
 const SIGN=`${APP} · الإصدار ${APP_VER} · تصميم وتطوير ${DEV}`;
 try{console.log('%c'+APP+' v'+APP_VER+' — تصميم وتطوير '+DEV,'color:#c99a3a;font-weight:bold;font-size:13px')}catch(e){}
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
@@ -514,12 +514,14 @@ const CAT_DEF=[
   ['i_salary','الراتب','💼','income',''],['i_rent','إيجارات العقارات','🏢','income',''],['i_car','عائد السيارة','🚗','income',''],
   ['i_stock','أرباح الأسهم','📈','income',''],['i_other','دخل آخر','💰','income','']];
 function blank(){return {v:1,demo:false,lastWallet:null,
-  settings:{rate:1450,digits:'en',theme:'auto',budget:'free',user:'حيدر',sadaqaPct:0,sadaqaBase:'income'},
+  settings:{rate:1450,digits:'en',theme:'auto',budget:'free',user:'',sadaqaPct:0,sadaqaBase:'income'},
   zakat:{base:'gold',goldPrice:0,silverPrice:0,priceDate:'',hawlStart:'',jewelry:false,deduct:true,receivables:true,jam:true,goals:true,trade:0,otherCash:0,silverGrams:0,gold:[],history:[]},
   wallets:[],cats:CAT_DEF.map(([id,name,icon,kind,group])=>({id,name,icon,kind,group,limit:0})),
   tx:[],commits:[],people:[],jams:[],props:[],invs:[],debts:[],goals:[]}}
 function load(){try{S=JSON.parse(localStorage.getItem(LS)||'null')}catch(e){S=null}
-  if(!S||!S.settings){S=seed()} normalize(); save()}
+  if(!S||!S.settings){S=blank()}
+  else if(S.demo){const st=S.settings;S=blank();S.settings={...S.settings,...st,user:''};S.zakat=blank().zakat}
+  normalize(); save()}
 function normalize(){const b=blank();for(const k in b) if(S[k]===undefined) S[k]=b[k];
   for(const k in b.settings) if(S.settings[k]===undefined) S.settings[k]=b.settings[k];
   for(const k in b.zakat) if(S.zakat[k]===undefined) S.zakat[k]=b.zakat[k];
@@ -890,7 +892,9 @@ function walletCard(w,range){
 V.home=()=>{
   const [y,m]=VM,range=monthRange(y,m),T=totals(...range),tb=totalBalance(),[f,t]=range;
   let h='';
-  if(S.demo)h+=`<div class="banner"><span>✦ هذه بيانات تجريبية للعرض</span><a class="link" data-act="clearDemo">ابدأ ببياناتي</a></div>`;
+  if(!S.wallets.length)h+=`<div class="card flat" style="margin-bottom:16px;border-color:var(--line-strong)"><b class="kufi" style="font-size:18px">مرحباً بك في ${APP} ✦</b>
+    <p class="muted" style="font-size:13px;line-height:1.9;margin-top:6px">ابدأ بثلاث خطوات: أضف محافظك وبطاقاتك برصيدها الحالي، ثم اكتب اسمك وسعر الصرف من الإعدادات، ثم سجّل أول حركة من زر ＋.</p>
+    <div class="btns"><button class="btn gold" data-act="walletNew">＋ أول محفظة</button><button class="btn ghost" data-act="go" data-v="set">الإعدادات</button></div></div>`;
   h+=monthBar();
   h+=`<div class="hero"><div class="pattern"></div><span class="rate num">1$ = ${fmtN(S.settings.rate)} د.ع</span>
     <small>إجمالي الأموال · كل المحافظ</small><div class="big">${cnt(tb)} <em>د.ع</em></div>
@@ -1926,7 +1930,7 @@ ACT.rxlsx=async()=>{toast('جارٍ تجهيز Excel…');
    ===================================================================== */
 V.set=()=>{const st=S.settings,o=(k,opts)=>`<div class="opt">${opts.map(([v,l])=>`<button class="${String(st[k])===String(v)?'on':''}" data-act="setOpt" data-k="${k}" data-v="${v}">${l}</button>`).join('')}</div>`;
   return pageHead('الإعدادات')+`<div class="card flat" style="padding:4px 16px">
-    <div class="set"><div><b>اسمك</b><small>يظهر في الترحيب والتقارير</small></div><input class="inp" id="setUser" value="${esc(st.user)}" style="width:130px"></div>
+    <div class="set"><div><b>اسمك</b><small>يظهر في الترحيب والتقارير</small></div><input class="inp" id="setUser" value="${esc(st.user)}" placeholder="اكتب اسمك" style="width:130px"></div>
     <div class="set"><div><b>الأرقام</b><small>طريقة عرض الأرقام في كل التطبيق</small></div>${o('digits',[['en','123'],['ar','١٢٣']])}</div>
     <div class="set"><div><b>سعر صرف الدولار</b><small>دينار لكل 1 دولار</small></div><input class="inp num" id="setRate" inputmode="numeric" value="${st.rate}"></div>
     <div class="set"><div><b>المظهر</b><small>ليلي أو نهاري أو حسب الجهاز</small></div>${o('theme',[['light','نهاري'],['dark','ليلي'],['auto','تلقائي']])}</div>
@@ -1940,7 +1944,7 @@ V.set=()=>{const st=S.settings,o=(k,opts)=>`<div class="opt">${opts.map(([v,l])=
   ${sec('التقارير','',`<button class="btn gold" data-act="report" data-s="all">📄 التقرير الشامل (PDF · Excel)</button>`)}
   ${sec('بياناتك','',`<div class="card flat"><p class="muted" style="font-size:12px;line-height:1.8">كل بياناتك محفوظة على هذا الجهاز فقط. صدّر نسخة احتياطية بشكل دوري واحفظها في الملفات أو iCloud، وبها تنقل بياناتك لجهاز آخر.</p>
     <div class="btns"><button class="btn gold" data-act="backup">⬇ تصدير نسخة</button><button class="btn ghost" data-act="restore">⬆ استيراد نسخة</button></div>
-    <div class="btns"><button class="btn ghost" data-act="loadDemo">بيانات تجريبية</button><button class="btn danger" data-act="wipe">مسح كل البيانات</button></div>
+    <button class="btn danger" data-act="wipe" style="margin-top:10px">مسح كل البيانات</button>
     <input type="file" id="restoreFile" accept=".json,application/json" style="display:none"></div>`)}
   ${sec('حول التطبيق','',`<div class="card about"><div class="row" style="justify-content:flex-start;gap:14px"><div class="logo" style="width:56px;height:56px;font-size:26px;border-radius:17px">خ</div>
     <div><b class="kufi" style="font-size:20px">${APP}</b><br><small class="muted">إدارة الأموال الشخصية والعائلية</small></div><span class="badge" style="margin-inline-start:auto">الإصدار ${nm(dg(APP_VER))}</span></div>
@@ -1951,7 +1955,7 @@ V.set=()=>{const st=S.settings,o=(k,opts)=>`<div class="opt">${opts.map(([v,l])=
 ACT.setOpt=d=>{S.settings[d.k]=d.v;save();if(d.k==='theme')applyTheme();render(false)};
 document.addEventListener('change',e=>{
   if(e.target.id==='setRate'){const r=toNum(e.target.value);if(r>0){S.settings.rate=r;save();toast('حُدّث سعر الصرف ✓')}}
-  if(e.target.id==='setUser'){S.settings.user=e.target.value.trim()||'صديقي';save();greet();toast('تم الحفظ ✓')}
+  if(e.target.id==='setUser'){S.settings.user=e.target.value.trim();save();greet();toast('تم الحفظ ✓')}
   if(e.target.id==='restoreFile'){const file=e.target.files[0];if(!file)return;const rd=new FileReader();
     rd.onload=()=>{try{const d=JSON.parse(rd.result);if(!d||!d.settings||!Array.isArray(d.tx))throw 0;if(!confirm('استبدال بياناتك الحالية بهذه النسخة؟'))return;
       S=d;normalize();save();applyTheme();greet();VM=NOWK().split('-').map(Number);go('home',null,true);toast('اُستُعيدت النسخة ✓')}catch(_){toast('الملف غير صالح')}};rd.readAsText(file);e.target.value=''}});
@@ -1967,7 +1971,7 @@ ACT.loadDemo=()=>{if(!confirm('استبدال بياناتك ببيانات تج
 /* =====================================================================
    init
    ===================================================================== */
-function greet(){const h=new Date().getHours();$('#greet').textContent=h<12?'صباح الخير':h<17?'نهارك سعيد':'مساء الخير';$('#uname').textContent=S.settings.user||''}
+function greet(){const h=new Date().getHours();$('#greet').textContent=h<12?'صباح الخير':h<17?'نهارك سعيد':'مساء الخير';$('#uname').textContent=S.settings.user||'أهلاً بك'}
 function buildSideNav(){const L=[['tx','الحركات'],['cats','الفئات'],['fam','العائلة والأصدقاء'],['commit','الالتزامات'],['goals','الأهداف'],['debts','الديون'],['inv','الاستثمارات'],['sadaqa','الصدقات'],['zakat','الزكاة']];
   $('nav .in-nav').insertAdjacentHTML('beforeend',`<div class="nav-sep d-only">الأقسام</div>${L.map(([v,l])=>`<button class="d-only" data-act="go" data-v="${v}" data-nav="${v}">${svgI(v)}${l}</button>`).join('')}
     <div class="nav-sep d-only">أخرى</div><button class="d-only" data-act="report" data-s="all">${svgI('rep')}التقرير الشامل</button><button class="d-only" data-act="go" data-v="set" data-nav="set">${svgI('set')}الإعدادات</button>

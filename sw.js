@@ -1,5 +1,5 @@
 /* خِزانة — service worker: يعمل التطبيق بدون إنترنت بعد أول فتح */
-const VERSION = 'khizana-v1.3.1';
+const VERSION = 'khizana-v1.0.4';
 const SHELL = ['./', './index.html', './manifest.json', './icon-180.png', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {

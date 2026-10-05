@@ -482,6 +482,35 @@ nav .fab .d-ic{display:none}
 .sync-dot.ok{background:var(--em)}.sync-dot.wait{background:var(--warn)}.sync-dot.err{background:var(--expense)}
 @media (min-width:1400px){.app{max-width:1320px}}
 @media print{nav{display:none!important}body{padding-right:0!important}}
+
+/* interactive tour */
+#tour{position:fixed;inset:0;z-index:9000;opacity:0;transition:opacity .25s;pointer-events:none}
+#tour.on{opacity:1;pointer-events:auto}
+.t-hole{position:fixed;border-radius:18px;box-shadow:0 0 0 2px var(--gold),0 0 0 9999px rgba(3,8,6,.74);transition:all .38s cubic-bezier(.2,.8,.2,1);cursor:pointer}
+.t-card{position:fixed;left:16px;right:16px;max-width:420px;margin:0 auto;background:linear-gradient(var(--surface),var(--surface)),var(--bg);border:1px solid color-mix(in srgb,var(--gold) 45%,transparent);border-radius:20px;padding:14px 16px 12px;box-shadow:0 18px 50px rgba(0,0,0,.45);transition:top .38s cubic-bezier(.2,.8,.2,1),bottom .38s}
+.t-card.mid{top:50%!important;bottom:auto!important;transform:translateY(-50%)}
+.t-card.in{animation:tIn .35s cubic-bezier(.2,.8,.2,1)}
+@keyframes tIn{from{opacity:0;translate:0 10px}to{opacity:1;translate:0 0}}
+.t-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.t-n{font-size:11px;color:var(--muted)}
+.t-x{background:none;border:0;color:var(--muted);font-size:16px;cursor:pointer;padding:2px 6px}
+.t-card h4{font-family:'Noto Kufi Arabic',sans-serif;font-size:15.5px;color:var(--goldtext);margin-bottom:6px}
+.t-card p{font-size:13.5px;line-height:1.85;color:var(--text)}
+.t-btns{display:flex;gap:8px;margin-top:12px}
+.t-btns button{flex:1;border-radius:12px;padding:10px;font:inherit;font-weight:700;font-size:13.5px;cursor:pointer;border:1px solid var(--line-strong);background:transparent;color:var(--text)}
+.t-btns .t-next{flex:1.6;border:0;color:#1b1a14;background:linear-gradient(120deg,#b8892f,#f6dc94 45%,#c99a3a)}
+.t-dots{display:flex;gap:4px;justify-content:center;margin-top:10px}
+.t-dots i{width:5px;height:5px;border-radius:3px;background:var(--line-strong);transition:.25s}
+.t-dots i.on{width:16px;background:var(--gold)}
+.tour-tip{display:flex;align-items:center;gap:8px;margin:0 0 14px;padding:10px 12px;border-radius:16px;font-size:12.5px;font-weight:600;
+  background:color-mix(in srgb,var(--gold) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--gold) 40%,transparent);transition:opacity .25s;animation:tIn .5s .4s both}
+.tour-tip span{flex:1;line-height:1.6}
+.tour-tip .tt-go{border:0;border-radius:10px;padding:7px 12px;font:inherit;font-weight:800;font-size:12.5px;color:#1b1a14;background:linear-gradient(120deg,#b8892f,#f6dc94 45%,#c99a3a);cursor:pointer;white-space:nowrap}
+.tour-tip .tt-x{background:none;border:0;color:var(--muted);font-size:14px;cursor:pointer;padding:4px}
+.tour-chips{display:flex;flex-wrap:wrap;gap:8px}
+.tour-chips button{border:1px solid var(--line-strong);background:var(--surface2);color:var(--text);border-radius:12px;padding:8px 11px;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer}
+.tour-chips button:active{transform:scale(.96)}
+body.touring{overflow:hidden}
 </style>
 </head>
 <body>
@@ -489,6 +518,7 @@ nav .fab .d-ic{display:none}
   <header>
     <div class="brand" data-act="go" data-v="home"><div class="logo">خ</div><div class="hello"><small id="greet">أهلاً</small><b id="uname"></b><span id="syncDot" class="sync-dot"></span></div></div>
     <div class="hbtns">
+      <button class="icon-btn" id="helpBtn" data-act="tour" aria-label="شرح هذه الصفحة"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="M9.3 9.2a2.8 2.8 0 0 1 5.4 1c0 1.9-2.7 2.4-2.7 4"/><circle cx="12" cy="17.3" r=".6" fill="currentColor"/></svg></button>
       <button class="icon-btn" data-act="theme" aria-label="الوضع الليلي/النهاري"><svg id="themeIc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"></svg></button>
       <button class="icon-btn" data-act="menu" aria-label="كل الأقسام"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg></button>
     </div>
@@ -1961,6 +1991,167 @@ function installGuide(force){
 ACT.noInstall=()=>{try{localStorage.setItem('khizana_noinstall','1')}catch(e){}closeSheet()};
 ACT.bip=async()=>{if(!BIP)return;BIP.prompt();try{await BIP.userChoice}catch(e){}BIP=null;closeSheet()};
 ACT.installHelp=()=>installGuide(true);
+
+/* ================= الشرح التفاعلي داخل كل تبويب ================= */
+const sq=(s)=>()=>$('#view '+s);
+const sh=(txt)=>()=>[...$$('#view .sec')].find(s=>{const h=s.querySelector('.sec-h h2');return h&&h.textContent.includes(txt)});
+const sc=(s)=>()=>{const e=$('#view '+s);return e&&(e.closest('.sec')||e)};
+const sn=(s)=>()=>$(s);
+const TOURS={
+ home:[
+  {t:null,h:'أهلاً بك في خِزانة 👋',x:'جولة قصيرة في الشاشة الرئيسية. اضغط «التالي» للمتابعة، وتستطيع إعادتها متى شئت من زر ❔ في الأعلى.'},
+  {t:sq('.month'),h:'اختيار الشهر',x:'كل أرقام الصفحة تخص الشهر الظاهر هنا. تنقّل بالسهمين بين الأشهر لترى أي شهر سابق.'},
+  {t:sq('.hero'),h:'إجمالي أموالك',x:'مجموع أرصدة كل محافظك وبطاقاتك محوّلاً إلى الدينار بسعر الصرف، وتحته دخل الشهر ومصروفه وادخاره. الديون التي عليك لا تُطرح من هذا الرقم.'},
+  {t:sh('محافظي'),h:'محافظك وبطاقاتك',x:'اسحب البطاقات جانبياً. اضغط أي بطاقة لترى رصيدها وحركتها لكل شهر على حدة.'},
+  {t:sq('.qrow'),h:'تسجيل سريع',x:'مصروف أو دخل أو تحويل بين محفظتين: اكتب المبلغ، واختر المحفظة والفئة ولمن صرفت، ثم احفظ.'},
+  {t:sh('الصرف اليومي'),h:'الصرف اليومي',x:'مصروف الشهر حسب الفئة، والأشرطة توضح أين يذهب أغلب مالك.'},
+  {t:sh('لمن صرفت'),h:'لمن صرفت',x:'توزيع المصروف بين: لي، للبيت، للعائلة، أو أشخاص محددين.'},
+  {t:sh('الصدقة'),h:'الصدقة الشهرية',x:'كم أعطيت من هدف صدقتك لهذا الشهر.'},
+  {t:sh('الالتزامات'),h:'الالتزامات الشهرية',x:'المصاريف الثابتة كل شهر (مولدة، إنترنت، مصروف للوالد…) وما دُفع منها.'},
+  {t:sh('أهداف'),h:'أهداف الادخار',x:'تقدّم كل هدف والموعد المتوقع للوصول إليه.'},
+  {t:sh('الإحصائيات'),h:'الإحصائيات',x:'الدخل مقابل المصروف لآخر ستة أشهر. اضغط أي عمود لرؤية رقمه.'},
+  {t:sq('[data-act="report"][data-s="all"]'),h:'التقرير الشامل',x:'تقرير يجمع كل الأقسام لأي فترة تختارها، وتصدّره PDF أو Excel.'},
+  {t:sn('nav .fabbtn'),h:'زر الأقسام',x:'من هنا تصل لكل الأقسام: المحافظ، الادخار، الجمعيات، العقارات، الديون، الزكاة… وتضيف حركة جديدة.'},
+  {t:sn('nav [data-nav="set"]'),h:'الإعدادات',x:'اسمك، سعر الصرف، المظهر، المزامنة بين أجهزتك، النسخ الاحتياطي، والتقييم.'},
+  {t:sn('#helpBtn'),h:'الشرح متاح دائماً',x:'في أي صفحة اضغط ❔ ليشرح لك محتواها خطوة بخطوة.'}],
+ wallets:[
+  {t:sq('.page-title'),h:'المحافظ والبطاقات',x:'كل بطاقة أو محفظة إلكترونية أو كاش أو حساب مصرفي تديره هنا بشكل مستقل. «＋ محفظة» لإضافة جديدة، و«تقرير» لتقرير المحافظ.'},
+  {t:sq('.month'),h:'رصيد أي شهر',x:'الأرصدة تُعرض كما كانت في نهاية الشهر المختار، فتعرف كم كان عندك في أي شهر سابق.'},
+  {t:sq('.hero'),h:'المجموع',x:'مجموع الأرصدة بالدينار وما يعادله بالدولار، وتوزيعه حسب العملة.'},
+  {t:sq('.wlist'),h:'بطاقاتك',x:'كل بطاقة برصيدها وما صُرف منها هذا الشهر. اضغط أي بطاقة لفتح تفاصيلها شهراً بشهر.'},
+  {t:sh('حركة كل محفظة'),h:'حركة كل محفظة',x:'الداخل والخارج لكل محفظة في الشهر المختار.'}],
+ wallet:[
+  {t:sq('.w'),h:'رصيد البطاقة',x:'الرصيد الحالي، أو الرصيد في نهاية الشهر الذي تختاره من الأعلى.'},
+  {t:sq('.kpis'),h:'ملخص الشهر',x:'رصيد أول الشهر + الداخل − الخارج = رصيد آخر الشهر.'},
+  {t:sh('كل شهر على حدة'),h:'كل شهر على حدة',x:'جدول لكل شهر: أول الشهر، الداخل، الخارج، آخر الشهر. اضغط أي شهر لعرض حركاته.'},
+  {t:sh('الحركات'),h:'حركات البطاقة',x:'كل حركات هذه البطاقة في الشهر المختار. اضغط أي حركة لتعديلها أو حذفها.'},
+  {t:sq('.page-title .ph-btns'),h:'تعديل وتقرير',x:'«تعديل» لتغيير الاسم أو الرصيد الافتتاحي أو اللون، و«تقرير» لتقرير هذه البطاقة PDF أو Excel.'}],
+ savings:[
+  {t:sq('.page-title'),h:'الادخار',x:'كل مدخراتك في مكان واحد. «إيداع» يضيف للادخار العام من أي محفظة، و«سحب» يعيده لها.'},
+  {t:sq('.hero'),h:'مجموع مدخراتك',x:'الأهداف + أقساط الجمعيات + الادخار العام، وادخار هذا الشهر، ونسبة ادخارك من الدخل.'},
+  {t:sh('أين مدخراتك'),h:'أين مدخراتك',x:'توزيع المدخرات بين الأهداف والجمعيات والادخار العام. اضغط أي بند لفتحه.'},
+  {t:sh('الادخار الشهري'),h:'الادخار الشهري',x:'كم ادّخرت في كل شهر خلال الأشهر الأخيرة.'},
+  {t:sh('حركات الادخار'),h:'حركات الادخار',x:'كل إيداع وسحب وقسط جمعية في الشهر المختار.'}],
+ tx:[
+  {t:sq('.seg'),h:'فلترة الحركات',x:'اعرض الكل أو المصروف فقط أو الدخل أو التحويلات أو الحركات الأخرى (ادخار، ديون).'},
+  {t:sq('.kpis'),h:'ملخص الشهر',x:'دخل الشهر ومصروفه.'},
+  {t:sc('.li'),h:'الحركات حسب اليوم',x:'الحركات مجمّعة حسب اليوم. اضغط أي حركة لتعديلها أو حذفها.'}],
+ cats:[
+  {t:sq('.seg'),h:'نوع الفئات',x:'فئات الصرف أو مصادر الدخل.'},
+  {t:sq('.card'),h:'التوزيع',x:'نسبة كل فئة من مجموع الشهر.'},
+  {t:sh('التفاصيل'),h:'الفئات',x:'اضغط أي فئة لتعديل اسمها وأيقونتها وحدّها الشهري. وتستطيع إضافة فئة جديدة من «＋» أو من شاشة التسجيل نفسها.'}],
+ fam:[
+  {t:sq('.hero'),h:'العائلة والأصدقاء',x:'ما صرفته على العائلة والأصدقاء هذا الشهر.'},
+  {t:sc('.av'),h:'كل شخص',x:'الصرف على كل شخص هذا الشهر. «＋ التزام له» لمبلغ ثابت شهري (راتب، دراسة، مشروع)، و«＋ مصروف له» لصرف مباشر.'},
+  {t:sh('المقارنة'),h:'المقارنة',x:'مقارنة الصرف بين الأشخاص.'}],
+ commit:[
+  {t:sq('.hero'),h:'الالتزامات الشهرية',x:'مجموع الالتزامات الثابتة لهذا الشهر وكم دُفع منها.'},
+  {t:sh('القائمة'),h:'القائمة',x:'كل التزام بيوم دفعه ومحفظته. اضغط «دفع» لتسجيل دفعة الشهر، ويمكنك دفع مبلغ مختلف إن تغيّر.'},
+  {t:sh('الالتزام بالدفع'),h:'الالتزام بالدفع',x:'نسبة ما دفعته من التزاماتك في الأشهر الأخيرة.'}],
+ goals:[
+  {t:sq('.hero'),h:'أهداف الادخار',x:'مجموع ما ادخرته في الأهداف مقابل المستهدف.'},
+  {t:sc('.goal'),h:'كل هدف',x:'الحلقة نسبة الإنجاز. «إيداع» و«سحب» من أي محفظة، والموعد المتوقع للوصول حسب معدل ادخارك، والمطلوب شهرياً إن حددت موعداً.'},
+  {t:sh('ادخارك الشهري'),h:'ادخارك الشهري',x:'ما ادخرته شهرياً في الأهداف والجمعيات.'}],
+ jam:[
+  {t:sq('.page-title'),h:'الجمعيات',x:'«＋ جمعية» لإضافة جمعية تديرها أنت، أو جمعية تشارك فيها.'},
+  {t:sq('.hero'),h:'ملخص الشهر',x:'ما جُمع هذا الشهر في الجمعيات التي تديرها.'},
+  {t:sc('.seg'),h:'جمعياتك',x:'بدّل بين: أديرها، أشارك فيها، منتهية. اضغط أي جمعية لفتحها.'},
+  {t:sh('نسبة التحصيل'),h:'نسبة التحصيل',x:'نسبة ما دُفع في كل جمعية هذا الشهر.'}],
+ jamd:[
+  {t:sq('.month'),h:'الدورات',x:'تنقّل بين أشهر الجمعية (الدورات).'},
+  {t:sq('.hero'),h:'بيانات الجمعية',x:'تاريخ البداية وقيمة السهم ومبلغ الاستلام.'},
+  {t:sh('مستلم'),h:'مستلم الدورة',x:'من يستلم هذا الشهر، مع تحقق تلقائي: مجموع الأسهم = عدد الأشهر، وكل دورة = سهم كامل.'},
+  {t:sh('الأعضاء'),h:'الأعضاء',x:'اضغط حالة العضو لتتحول: لم يدفع ← دفع ← دفعتُ عنه (يُسجَّل ديناً لك عليه). العضو بسهم ونصف يُكتب مرة واحدة، و«📍 ترتيب» يحدد شهر استلام كل سهم أو نصف سهم.'},
+  {t:sh('جدول الاستلام'),h:'جدول الاستلام',x:'ترتيب الاستلام لكل الدورات. «🎲 قرعة» لترتيب عشوائي عادل، أو «تلقائي»، أو «تبديل الترتيب».'},
+  {t:sc('[data-act="jpPay"]'),h:'أقساطك',x:'اضغط أي شهر لتسجيل قسطه، فيُحسب ادخاراً من محفظتك في ذلك الشهر.'},
+  {t:sq('[data-act="jpRecv"]'),h:'الاستلام',x:'عند الاستلام يسألك: «هل أستقطع ما دفعته وأضيف المبلغ المستلم؟». بعد «نعم» لا يُحسب المبلغ مرتين، والأقساط اللاحقة تُسجَّل سداداً للجمعية لا ادخاراً.'},
+  {t:sh('الإحصائيات'),h:'الإحصائيات',x:'نسب الدفع والتحصيل.'}],
+ prop:[
+  {t:sq('.page-title'),h:'العقارات',x:'«＋ عقار»: تكتب النوع والعنوان والتفاصيل وعدد المحلات والشقق والبيوت فقط، ثم تُدخل كل وحدة على حدة.'},
+  {t:sq('.hero'),h:'إيجارات الشهر',x:'ما استلمته من إيجارات هذا الشهر مقابل المتوقع.'},
+  {t:sc('[data-act="unit"]'),h:'مخطط الوحدات',x:'كل مربع وحدة، ولونه يوضح حالتها: مستلم، متأخر، لم يحن، شاغر، أو «أكمل البيانات» للوحدة الجديدة. اضغط الوحدة لإدخال إيجارها ومستأجرها وعقدها، أو لتسجيل استلام الإيجار.'},
+  {t:sh('الإحصائيات'),h:'الإحصائيات',x:'نسبة الإشغال والتحصيل والدخل السنوي المتوقع.'}],
+ debts:[
+  {t:sq('.page-title'),h:'الديون والأقساط',x:'«＋ دين»: لي عند شخص، أو عليّ لشخص، أو شراء بالأقساط مع جدول أقساطه.'},
+  {t:sq('.hero'),h:'الملخص',x:'ما لك عند الناس، وما عليك، وأقساط الشهر، والمتأخر.'},
+  {t:sq('p.muted'),h:'ملاحظة مهمة',x:'ما عليك من ديون لا يُطرح من إجمالي أموالك، لأنك تسدّده من البطاقة أو الكاش أو أي مصدر آخر.'},
+  {t:sc('.seg'),h:'التبويبات',x:'لي، عليّ، أقساط، الأشخاص (كشف حساب ونسبة الأمان لكل مقترض)، مسددة. اضغط أي دين لتسجيل دفعة من المحفظة التي تختارها.'},
+  {t:sh('الإحصائيات'),h:'الإحصائيات',x:'توزيع الديون حسب الأشخاص.'}],
+ inv:[
+  {t:sq('.hero'),h:'الاستثمارات',x:'القيمة الحالية لكل استثماراتك ورأس المال والعائد.'},
+  {t:sc('.kv'),h:'كل استثمار',x:'«تحديث القيمة» لتسجيل قيمته الحالية، و«تسجيل عائد» ليدخل في دخلك ومحفظتك.'},
+  {t:sh('الإحصائيات'),h:'الإحصائيات',x:'العوائد الشهرية.'}],
+ sadaqa:[
+  {t:sq('.page-title'),h:'الصدقات',x:'«＋ صدقة» للتسجيل، و«النسبة» لتحديد نسبة صدقتك من الدخل.'},
+  {t:sq('.hero'),h:'هدف الشهر',x:'الهدف = النسبة × دخل الشهر، وكم أعطيت، والمتبقي.'},
+  {t:sh('صدقات'),h:'صدقات الشهر',x:'عند التسجيل تختار مبلغاً سريعاً (المتبقي أو نصفه أو الهدف كاملاً) أو تكتب أي مبلغ تريده، أقل أو أكثر، ولمن وبماذا.'},
+  {t:sh('الإحصائيات'),h:'الإحصائيات',x:'صدقاتك في آخر 12 شهراً.'}],
+ zakat:[
+  {t:sq('.hero'),h:'الزكاة الواجبة',x:'ربع العُشر (2.5%) من صافي أموالك الزكوية إذا بلغت النصاب، وموعد وجوبها.'},
+  {t:sh('الحول'),h:'الحول القمري',x:'بداية الحول بالتقويم الهجري والأيام الباقية. «تغيير» لتحديد تاريخ بداية الحول.'},
+  {t:sh('الأموال الزكوية'),h:'الأموال الزكوية',x:'تُحسب تلقائياً من محافظك وأهدافك وجمعياتك وديونك. اضغط أي بند لتعديله، مثل الذهب بالوزن والعيار.'},
+  {t:sh('الخصومات'),h:'الخصومات',x:'الديون الحالّة عليك وأقساط الجمعيات المتبقية بعد الاستلام.'},
+  {t:sh('إخراج الزكاة'),h:'إخراج الزكاة',x:'سجّل ما أخرجته من الزكاة، فيُخصم من محفظتك ويظهر المتبقي.'},
+  {t:sh('أحكام'),h:'أحكام مختصرة',x:'القواعد المعتمدة في الحساب، والخيارات في المسائل الخلافية.'}],
+ set:[
+  {t:sq('.card.flat'),h:'التخصيص',x:'اسمك، والأرقام عربية أو إنجليزية، وسعر صرف الدولار، والمظهر، وأسلوب الميزانية.'},
+  {t:sh('القوائم'),h:'القوائم',x:'الفئات، والالتزامات الشهرية، والعائلة، ونسبة الصدقة، والزكاة.'},
+  {t:sh('المزامنة'),h:'المزامنة بين أجهزتك',x:'اربط جهازك بتوكن GitHub وكلمة سر، فتتزامن بياناتك مشفّرة وتلقائياً بعد كل تعديل.'},
+  {t:sh('بياناتك'),h:'بياناتك',x:'«تصدير نسخة» احتياطية وحفظها في الملفات أو iCloud، و«استيراد نسخة» لنقلها لجهاز آخر.'},
+  {t:sh('الشرح التفاعلي'),h:'الشرح التفاعلي',x:'اختر أي قسم ليفتحه ويشرحه لك خطوة بخطوة.'},
+  {t:sh('للتقييم'),h:'للتقييم والمراجعة',x:'قيّم التطبيق واكتب ملاحظتك فتصلني على البريد، وتجد حساباتي في إنستغرام ولينكدإن.'}]
+};
+const TOUR_NAMES=[['home','🏠 الرئيسية'],['wallets','💳 المحافظ'],['savings','💰 الادخار'],['jam','👥 الجمعيات'],['prop','🏢 العقارات'],['debts','🤝 الديون'],['goals','🎯 الأهداف'],['commit','📌 الالتزامات'],['fam','👨‍👩‍👦 العائلة'],['inv','📈 الاستثمارات'],['sadaqa','🤲 الصدقة'],['zakat','🕌 الزكاة'],['tx','🔁 الحركات'],['cats','🏷️ الفئات'],['set','⚙️ الإعدادات']];
+const TK='khizana_tours';let TSEEN={};try{TSEEN=JSON.parse(localStorage.getItem(TK)||'{}')||{}}catch(e){}
+const tSeen=v=>{TSEEN[v]=1;try{localStorage.setItem(TK,JSON.stringify(TSEEN))}catch(e){}};
+let TR=null;
+function tourStart(v){v=v||VIEW;const all=TOURS[v]||[];
+  const steps=all.filter(s=>!s.t||s.t());
+  if(!steps.length){toast('لا يوجد شرح لهذه الصفحة بعد');return}
+  closeSheet();tSeen(v);$('#tourTip')&&$('#tourTip').remove();
+  let o=$('#tour');if(!o){o=document.createElement('div');o.id='tour';document.body.appendChild(o)}
+  o.innerHTML=`<div class="t-hole"></div><div class="t-card" role="dialog" aria-live="polite"><div class="t-top"><span class="t-n num"></span><button class="t-x" aria-label="إنهاء">✕</button></div><h4></h4><p></p><div class="t-btns"><button class="t-prev">السابق</button><button class="t-next">التالي</button></div><div class="t-dots"></div></div>`;
+  o.querySelector('.t-x').onclick=tourEnd;o.querySelector('.t-prev').onclick=()=>tourGo(-1);o.querySelector('.t-next').onclick=()=>tourGo(1);
+  o.querySelector('.t-hole').onclick=()=>tourGo(1);
+  TR={v,i:0,steps};document.body.classList.add('touring');requestAnimationFrame(()=>o.classList.add('on'));tourShow()}
+function tourGo(d){if(!TR)return;const n=TR.i+d;if(n<0)return;if(n>=TR.steps.length){tourEnd();return}TR.i=n;tourShow()}
+function tourEnd(){const o=$('#tour');TR=null;document.body.classList.remove('touring');if(o){o.classList.remove('on');setTimeout(()=>o.remove(),300)}}
+function tourShow(){const o=$('#tour'),st=TR.steps[TR.i],hole=o.querySelector('.t-hole'),card=o.querySelector('.t-card');
+  card.querySelector('h4').textContent=st.h;card.querySelector('p').textContent=st.x;
+  card.querySelector('.t-n').textContent=`${dg(TR.i+1)} / ${dg(TR.steps.length)}`;
+  card.querySelector('.t-prev').style.visibility=TR.i?'visible':'hidden';
+  card.querySelector('.t-next').textContent=TR.i===TR.steps.length-1?'إنهاء ✓':'التالي';
+  card.querySelector('.t-dots').innerHTML=TR.steps.map((_,i)=>`<i class="${i===TR.i?'on':''}"></i>`).join('');
+  card.classList.remove('in');void card.offsetWidth;card.classList.add('in');
+  const el=st.t&&st.t();
+  if(!el){hole.style.cssText=`top:${innerHeight/2}px;left:${innerWidth/2}px;width:0;height:0`;card.style.top='';card.style.bottom='';card.classList.add('mid');return}
+  card.classList.remove('mid');
+  const fixed=!!el.closest('nav,header');
+  if(!fixed){const r0=el.getBoundingClientRect(),tall=r0.height>innerHeight*.55;el.scrollIntoView({behavior:'smooth',block:tall?'start':'center'})}
+  setTimeout(()=>{if(!TR)return;const r=el.getBoundingClientRect(),p=8,top=Math.max(6,r.top-p),bot=Math.min(innerHeight-6,r.bottom+p),
+    l=Math.max(6,r.left-p),rt=Math.min(innerWidth-6,r.right+p);
+    hole.style.cssText=`top:${top}px;left:${l}px;width:${rt-l}px;height:${Math.max(0,bot-top)}px`;
+    const below=innerHeight-bot,above=top,ch=card.offsetHeight+16;
+    if(below>=ch){card.style.top=(bot+10)+'px';card.style.bottom=''}
+    else if(above>=ch){card.style.top=(top-card.offsetHeight-10)+'px';card.style.bottom=''}
+    else if((top+bot)/2>innerHeight/2){card.style.bottom='';card.style.top='16px'}else{card.style.top='';card.style.bottom='16px'}
+  },fixed?60:420)}
+addEventListener('keydown',e=>{if(!TR)return;if(e.key==='Escape')tourEnd();else if(e.key==='ArrowLeft')tourGo(1);else if(e.key==='ArrowRight')tourGo(-1)});
+addEventListener('resize',()=>{if(TR)tourShow()});
+ACT.tour=d=>{if(d&&d.v&&d.v!==VIEW){go(d.v);setTimeout(()=>tourStart(d.v),650)}else tourStart()};
+ACT.tourNo=()=>{tSeen(VIEW);const t=$('#tourTip');if(t){t.style.opacity=0;setTimeout(()=>t.remove(),250)}};
+/* first visit of a tab → a gentle invitation */
+const _render=render;
+render=function(anim){_render(anim);
+  if(TR&&TR.v!==VIEW)tourEnd();
+  if(!TOURS[VIEW]||TSEEN[VIEW]||TR)return;
+  if(VIEW==='home'&&!S.wallets.length)return;
+  const v=$('#view');if(!v)return;
+  v.insertAdjacentHTML('afterbegin',`<div id="tourTip" class="tour-tip"><span>👋 أول مرة هنا؟ دعني أشرح لك هذه الصفحة</span><button class="tt-go" data-act="tour">▶ شرح</button><button class="tt-x" data-act="tourNo" aria-label="لا شكراً">✕</button></div>`)};
+function tourSetHTML(){return `<div class="card flat"><p class="muted" style="font-size:12.5px;line-height:1.8;margin-bottom:10px">اختر قسماً ليفتحه ويشرح لك كل جزء فيه خطوة بخطوة. وفي أي صفحة اضغط ❔ في الأعلى.</p>
+  <div class="tour-chips">${TOUR_NAMES.map(([v,l])=>`<button data-act="tour" data-v="${v}">${l}</button>`).join('')}</div>
+  <button class="btn ghost" style="margin-top:12px" data-act="tourReset">↺ أظهر دعوات الشرح من جديد</button></div>`}
+ACT.tourReset=()=>{TSEEN={};try{localStorage.removeItem(TK)}catch(e){}toast('ستظهر دعوة الشرح عند فتح كل قسم ✓')};
 /* =====================================================================
    REPORTS (PDF + Excel) — per tab and full
    ===================================================================== */
@@ -2155,6 +2346,7 @@ V.set=()=>{const st=S.settings,o=(k,opts)=>`<div class="opt">${opts.map(([v,l])=
     <div style="grid-column:1/-1"><small>المصدر</small><b><a href="https://github.com/PROG-ALONE/khizana" target="_blank" rel="noopener" style="color:var(--gold);text-decoration:none" class="num">github.com/PROG-ALONE/khizana</a></b></div></div>
     <p class="muted" style="font-size:12px;margin-top:12px;line-height:1.8">يعمل بدون إنترنت بعد أول فتح · بياناتك محفوظة على جهازك فقط ولا تُرسل لأي خادم.</p></div>`)}
   ${sec('للتقييم والمراجعة','',reviewHTML())}
+  ${sec('الشرح التفاعلي','',tourSetHTML())}
   ${sec('طريقة التثبيت','',`<button class="btn ghost" data-act="installHelp">📲 كيف أثبّت التطبيق على الآيفون والأندرويد</button>`)}
   <p class="note sign" dir="rtl"><bdi dir="ltr">© ${dg(new Date().getFullYear())}</bdi> ${SIGN}</p>`};
 ACT.setOpt=d=>{S.settings[d.k]=d.v;save();if(d.k==='theme')applyTheme();render(false)};

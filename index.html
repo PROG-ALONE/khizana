@@ -2150,8 +2150,129 @@ render=function(anim){_render(anim);
   v.insertAdjacentHTML('afterbegin',`<div id="tourTip" class="tour-tip"><span>👋 أول مرة هنا؟ دعني أشرح لك هذه الصفحة</span><button class="tt-go" data-act="tour">▶ شرح</button><button class="tt-x" data-act="tourNo" aria-label="لا شكراً">✕</button></div>`)};
 function tourSetHTML(){return `<div class="card flat"><p class="muted" style="font-size:12.5px;line-height:1.8;margin-bottom:10px">اختر قسماً ليفتحه ويشرح لك كل جزء فيه خطوة بخطوة. وفي أي صفحة اضغط ❔ في الأعلى.</p>
   <div class="tour-chips">${TOUR_NAMES.map(([v,l])=>`<button data-act="tour" data-v="${v}">${l}</button>`).join('')}</div>
-  <button class="btn ghost" style="margin-top:12px" data-act="tourReset">↺ أظهر دعوات الشرح من جديد</button></div>`}
+  <button class="btn ghost" style="margin-top:12px" data-act="story">📖 قصة خِزانة: كيف بدأت الفكرة</button>
+  <button class="btn ghost" style="margin-top:8px" data-act="tourReset">↺ أظهر دعوات الشرح من جديد</button></div>`}
 ACT.tourReset=()=>{TSEEN={};try{localStorage.removeItem(TK)}catch(e){}toast('ستظهر دعوة الشرح عند فتح كل قسم ✓')};
+
+/* ================= قصة التطبيق: مسار تفاعلي عند أول فتح ================= */
+const STK='khizana_story';
+document.head.insertAdjacentHTML('beforeend',`<style>
+#story{position:fixed;inset:0;z-index:9500;background:radial-gradient(700px 520px at 85% 0%,rgba(217,180,101,.22),transparent 60%),radial-gradient(700px 600px at 0% 100%,rgba(34,176,131,.2),transparent 60%),linear-gradient(170deg,#0b2a21,#050c0a 70%);color:#f6efdc;
+  display:flex;flex-direction:column;opacity:0;transition:opacity .45s;overflow:hidden;touch-action:pan-y}
+#story.on{opacity:1}#story.off{opacity:0;pointer-events:none}
+#story::before{content:"";position:absolute;inset:0;opacity:.05;background-image:repeating-linear-gradient(45deg,#f3d68a 0 1.5px,transparent 1.5px 26px);pointer-events:none}
+.st-top{display:flex;align-items:center;gap:6px;padding:calc(env(safe-area-inset-top) + 14px) 18px 6px;position:relative;z-index:2}
+.st-bars{flex:1;display:flex;gap:5px}.st-bars i{flex:1;height:3.5px;border-radius:3px;background:rgba(255,255,255,.16);overflow:hidden;position:relative}
+.st-bars i b{position:absolute;inset:0;background:linear-gradient(90deg,#c99a3a,#f6dc94);transform-origin:right;transform:scaleX(0);transition:transform .5s}
+.st-bars i.done b{transform:scaleX(1)}
+.st-skip{background:none;border:0;color:#cfd8d2;font:inherit;font-size:13px;padding:6px 8px;cursor:pointer}
+.st-track{flex:1;position:relative}
+.st-s{position:absolute;inset:0;padding:10px 26px 30px;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow-y:auto;text-align:center;opacity:0;pointer-events:none;transform:translateX(-40px);transition:opacity .5s,transform .6s cubic-bezier(.2,.8,.2,1)}
+.st-s.on{opacity:1;pointer-events:auto;transform:none}.st-s.prev{transform:translateX(40px)}
+.st-s h2{font-family:'Noto Kufi Arabic',sans-serif;font-size:clamp(25px,7vw,34px);line-height:1.5;font-weight:800}
+.st-s p.sub{font-size:14.5px;color:#cfd8d2;line-height:1.85;margin-top:8px;max-width:420px}
+.st-g{background:linear-gradient(120deg,#c99a3a,#fff1c4 45%,#d9b465);-webkit-background-clip:text;background-clip:text;color:transparent}
+.st-s .an{opacity:0;transform:translateY(18px)}
+.st-s.on .an{animation:stUp .7s cubic-bezier(.2,.8,.2,1) forwards;animation-delay:calc(var(--d,0) * 1ms)}
+@keyframes stUp{to{opacity:1;transform:none}}
+@keyframes stPop{0%{opacity:0;transform:scale(.5)}70%{opacity:1;transform:scale(1.08)}100%{opacity:1;transform:scale(1)}}
+.st-book{margin-top:22px;width:min(300px,78vw);background:#f4ecd8;color:#2a2418;border-radius:20px;padding:14px 18px;transform:rotate(-2deg);box-shadow:0 20px 50px rgba(0,0,0,.45);position:relative}
+.st-book .r{display:flex;justify-content:space-between;font-size:14px;padding:7px 0;border-bottom:1.5px dashed #d6c9a8;opacity:0}
+.st-s.on .st-book .r{animation:stUp .45s forwards;animation-delay:calc(400ms + var(--i) * 230ms)}
+.st-book .r b{direction:ltr;font-weight:700}
+.st-cnt{margin-top:18px;font-size:15px;color:#f3d68a;font-weight:800}
+.st-apps{margin-top:22px;display:grid;grid-template-columns:1fr 1fr;gap:12px;width:min(360px,90vw)}
+.st-app{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:12px 10px;position:relative;opacity:0;text-align:right}
+.st-s.on .st-app{animation:stPop .55s forwards;animation-delay:calc(300ms + var(--i) * 260ms)}
+.st-app .ic{font-size:24px}.st-app b{display:block;font-size:12px;margin-top:4px}.st-app span{font-size:11.5px;color:#c7cfca;line-height:1.6;display:block}
+.st-app .x{position:absolute;top:8px;left:8px;width:26px;height:26px;border-radius:50%;background:#c0392b;color:#fff;display:grid;place-items:center;font-size:14px;font-weight:800;opacity:0}
+.st-s.on .st-app .x{animation:stPop .4s forwards;animation-delay:calc(1900ms + var(--i) * 220ms)}
+.st-s.on .st-app{transition:filter .4s}.st-s.on .st-app.dim{filter:grayscale(.75) brightness(.7)}
+.st-exp{margin-top:34px;border:0;border-radius:20px;padding:18px 34px;font:inherit;font-family:'Noto Kufi Arabic';font-size:19px;font-weight:800;color:#1b1a14;background:linear-gradient(120deg,#b8892f,#f6dc94 45%,#c99a3a);box-shadow:0 0 0 0 rgba(243,214,138,.6);animation:stPulse 1.6s infinite;cursor:pointer}
+@keyframes stPulse{0%{box-shadow:0 0 0 0 rgba(243,214,138,.55)}100%{box-shadow:0 0 0 22px rgba(243,214,138,0)}}
+.st-exp.shake{animation:stShake .5s;filter:grayscale(.6) brightness(.8)}
+@keyframes stShake{20%,60%{transform:translateX(-9px)}40%,80%{transform:translateX(9px)}}
+.st-hint{font-size:12.5px;color:#d9b465;margin-top:10px}
+.st-lock{margin-top:20px;background:#f2f2f7;color:#111;border-radius:20px;padding:16px 18px;width:min(320px,86vw);opacity:0;transform:scale(.85);transition:.4s cubic-bezier(.2,.8,.2,1)}
+.st-lock.on{opacity:1;transform:none}.st-lock b{font-size:16px}.st-lock p{font-size:13px;color:#555;line-height:1.7;margin-top:4px}
+.st-lost{margin-top:18px;font-family:'Noto Kufi Arabic';font-size:20px;color:#ff8a80;font-weight:800;opacity:0;transition:.5s .5s}.st-lost.on{opacity:1}
+.st-logo{margin-top:26px;width:118px;height:118px;border-radius:36px;background:linear-gradient(120deg,#b8892f,#f6dc94 45%,#c99a3a);display:grid;place-items:center;color:#1b1a14;font-family:'Noto Kufi Arabic';font-weight:800;font-size:60px;box-shadow:0 0 70px rgba(243,214,138,.45);opacity:0;cursor:pointer;user-select:none}
+.st-s.on .st-logo{animation:stPop .9s .2s forwards}
+.st-name{font-family:'Noto Kufi Arabic';font-size:52px;font-weight:800;margin-top:14px}
+.st-feats{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:20px;max-width:440px}
+.st-feats button{opacity:0;border:1px solid rgba(243,214,138,.45);background:rgba(0,0,0,.25);color:#f3d68a;border-radius:20px;padding:8px 13px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;transition:background .25s,transform .2s}
+.st-s.on .st-feats button{animation:stPop .45s forwards;animation-delay:calc(200ms + var(--i) * 110ms)}
+.st-feats button.sel{background:linear-gradient(120deg,#b8892f,#f6dc94 45%,#c99a3a);color:#1b1a14}
+.st-fd{min-height:56px;margin-top:14px;font-size:13.5px;line-height:1.8;color:#e9efe9;max-width:380px;transition:opacity .25s}
+.st-pr{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:22px;width:min(360px,90vw)}
+.st-pr div{opacity:0;background:rgba(255,255,255,.06);border:1px solid rgba(243,214,138,.3);border-radius:16px;padding:14px 8px;font-size:13px;font-weight:700}
+.st-pr div i{display:block;font-style:normal;font-size:24px;margin-bottom:4px}
+.st-s.on .st-pr div{animation:stPop .5s forwards;animation-delay:calc(250ms + var(--i) * 170ms)}
+.st-in{margin-top:22px;width:min(320px,86vw);background:rgba(255,255,255,.08);border:1.5px solid rgba(243,214,138,.45);border-radius:16px;padding:14px;color:#fff;font:inherit;font-size:17px;text-align:center;outline:none}
+.st-in:focus{border-color:#f3d68a;box-shadow:0 0 0 4px rgba(243,214,138,.15)}
+.st-sig{margin-top:16px;font-size:12px;color:#d9b465}
+.st-foot{padding:12px 22px calc(env(safe-area-inset-bottom) + 18px);display:flex;gap:10px;position:relative;z-index:2}
+.st-foot button{border-radius:16px;padding:15px;font:inherit;font-weight:800;font-size:15.5px;cursor:pointer}
+.st-back{flex:0 0 auto;width:56px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);color:#f6efdc}
+.st-next{flex:1;border:0;color:#1b1a14;background:linear-gradient(120deg,#b8892f,#f6dc94 45%,#c99a3a)}
+.st-cf{position:fixed;width:9px;height:14px;top:-20px;z-index:9600;border-radius:2px;pointer-events:none}
+@media (min-width:900px){.st-s{padding-top:30px}.st-foot{max-width:460px;margin:0 auto;width:100%}}
+</style>`);
+const ST_SLIDES=[
+ ()=>`<h2 class="an">سنة كاملة…<br>وأنا أسجّل <span class="st-g">كل دينار</span></h2>
+   <div class="st-book">${[['مولدة','90,000'],['تسوق البيت','74,000'],['قسط الجمعية','250,000'],['سلفة لصديق','750,000'],['إيجار المحل','400,000'],['صدقة','50,000'],['راتب','1,850,000']].map(([a,b],i)=>`<div class="r" style="--i:${i}"><span>${a}</span><b>${b}</b></div>`).join('')}</div>
+   <div class="st-cnt an" style="--d:2200">365 يوماً · أكثر من 1,200 حركة 📒</div>`,
+ ()=>`<h2 class="an">جرّبت تطبيقات <span class="st-g">كثيرة</span></h2><p class="sub an" style="--d:150">مدفوعة ومجانية… وكلها كان ينقصها شيء</p>
+   <div class="st-apps">${[['💎','مدفوع','اشتراك شهري… وأغلبه يعتمد على ربط البنك'],['💸','مدفوع','لا يعرف الدينار ولا بطاقات الرواتب'],['📱','مجاني','إعلانات في كل شاشة… وبلا تقارير'],['📒','مجاني','لا جمعيات ولا عقارات ولا زكاة'],['🧾','دفتر ديون','للديون فقط… والمصروف في تطبيق آخر'],['🗂️','جدول Excel','يدوي ومتعب… ويضيع مع الوقت']].map(([i,t,d],k)=>`<div class="st-app" style="--i:${k}"><div class="ic">${i}</div><b>${t}</b><span>${d}</span><div class="x">✕</div></div>`).join('')}</div>`,
+ ()=>`<h2 class="an">وبعد سنة…<br>أردت <span class="st-g">تقريراً واحداً</span></h2><p class="sub an" style="--d:150">جرّب بنفسك 👇</p>
+   <button class="st-exp an" style="--d:350" id="stExp">📄 تصدير التقرير</button><div class="st-hint an" style="--d:600">اضغط الزر</div>
+   <div class="st-lock" id="stLock"><b>🔒 غير متاح</b><p>التصدير في النسخة المدفوعة فقط…<br>ولا يشمل الجمعيات ولا العقارات ولا الديون</p></div>
+   <div class="st-lost" id="stLost">ضاعت سنة من التسجيل 💔</div>`,
+ ()=>`<h2 class="an">فقرّرت أن <span class="st-g">أبنيه بنفسي</span></h2>
+   <div class="st-logo" id="stLogo">خ</div><div class="st-name st-g an" style="--d:700">خِزانة</div>
+   <p class="sub an" style="--d:900">تطبيق واحد لكل أموالك… صُمّم لواقعنا</p><div class="st-hint an" style="--d:1300">✨ المس الشعار</div>`,
+ ()=>`<h2 class="an">كل ما كنت أحتاجه<br><span class="st-g">في مكان واحد</span></h2><p class="sub an" style="--d:120">المس أي ميزة لتعرف عنها</p>
+   <div class="st-feats">${ST_FEATS.map(([l],i)=>`<button style="--i:${i}" data-f="${i}">${l}</button>`).join('')}</div><div class="st-fd" id="stFd"></div>`,
+ ()=>`<h2 class="an">وأموالك <span class="st-g">لك وحدك</span></h2>
+   <div class="st-pr">${[['📱','على جهازك فقط'],['📶','يعمل بدون إنترنت'],['🎁','مجاني بالكامل'],['🚫','بلا إعلانات']].map(([i,t],k)=>`<div style="--i:${k}"><i>${i}</i>${t}</div>`).join('')}</div>
+   <input class="st-in an" style="--d:1000" id="stName" placeholder="ما اسمك؟ (اختياري)" maxlength="30" autocomplete="off">
+   <div class="st-sig an" style="--d:1200">تصميم وتطوير ${DEV} · الإصدار ${APP_VER}</div>`
+];
+const ST_FEATS=[['💳 محافظ وبطاقات','كل بطاقة بإدارة مستقلة، بالدينار والدولار، مع تفاصيل كل شهر على حدة.'],['💰 الادخار','الأهداف والجمعيات والادخار العام في تبويب واحد، مع موعد الوصول لكل هدف.'],['👥 الجمعيات','بنظام الأسهم ونصف السهم، وقرعة عادلة، وتسوية ذكية عند الاستلام لا تحسب المبلغ مرتين.'],['🏢 العقارات','إيجار وعقد ومستأجر لكل محل وشقة، وتنبيه بالمتأخر.'],['🤝 الديون','لي وعليّ وأقساط، مع نسبة أمان لكل مقترض.'],['🤲 الصدقة','نسبة شهرية من دخلك، وتدفع المبلغ الذي تريده.'],['🕌 الزكاة','محسوبة من موجوداتك الفعلية، بالنصاب والحول الهجري.'],['📊 التقارير','PDF و Excel لكل قسم، وتقرير شامل بضغطة.'],['🔄 المزامنة','بين أجهزتك، مشفّرة وتلقائية.']];
+let STI=0;
+function storyShould(){try{return !localStorage.getItem(STK)&&!S.wallets.length&&!S.tx.length}catch(e){return false}}
+function storyStart(){closeSheet();let o=$('#story');if(o)o.remove();o=document.createElement('div');o.id='story';o.setAttribute('role','dialog');
+  o.innerHTML=`<div class="st-top"><div class="st-bars">${ST_SLIDES.map(()=>'<i><b></b></i>').join('')}</div><button class="st-skip" id="stSkip">تخطّي</button></div>
+   <div class="st-track">${ST_SLIDES.map((f,i)=>`<section class="st-s" data-i="${i}">${f()}</section>`).join('')}</div>
+   <div class="st-foot"><button class="st-back" id="stBack" aria-label="السابق">›</button><button class="st-next" id="stNext">التالي</button></div>`;
+  document.body.appendChild(o);document.body.classList.add('touring');
+  $('#stSkip').onclick=()=>storyEnd();$('#stNext').onclick=()=>storyGo(1);$('#stBack').onclick=()=>storyGo(-1);
+  $('#stExp').onclick=e=>{const b=e.currentTarget;b.classList.remove('shake');void b.offsetWidth;b.classList.add('shake');if(navigator.vibrate)navigator.vibrate(60);
+    setTimeout(()=>{$('#stLock').classList.add('on');$('#stLost').classList.add('on');$('#stNext').textContent='وماذا فعلت؟'},350)};
+  $('#stLogo').onclick=e=>{const r=e.currentTarget.getBoundingClientRect();confetti(r.left+r.width/2,r.top+r.height/2,46)};
+  $$('.st-feats button',o).forEach(b=>b.onclick=()=>{$$('.st-feats button',o).forEach(x=>x.classList.toggle('sel',x===b));const fd=$('#stFd');fd.style.opacity=0;setTimeout(()=>{fd.textContent=ST_FEATS[+b.dataset.f][1];fd.style.opacity=1},160)});
+  let sx=null;o.addEventListener('touchstart',e=>{sx=e.touches[0].clientX},{passive:true});
+  o.addEventListener('touchend',e=>{if(sx==null)return;const dx=e.changedTouches[0].clientX-sx;sx=null;if(Math.abs(dx)>60&&!e.target.closest('input'))storyGo(dx>0?1:-1)});
+  STI=0;requestAnimationFrame(()=>{o.classList.add('on');storyShow()})}
+function storyShow(){const o=$('#story');$$('.st-s',o).forEach((s,i)=>{s.classList.toggle('on',i===STI);s.classList.toggle('prev',i<STI)});
+  $$('.st-bars i',o).forEach((b,i)=>b.classList.toggle('done',i<=STI));
+  $('#stBack').style.visibility=STI?'visible':'hidden';
+  const last=STI===ST_SLIDES.length-1;$('#stNext').textContent=last?'ابدأ رحلتك ✨':STI===2?'اضغط الزر أولاً 👆':'التالي';
+  $('#stSkip').style.visibility=last?'hidden':'visible';
+  if(STI===1)setTimeout(()=>{if(STI===1)$$('.st-app',o).forEach((a,k)=>setTimeout(()=>a.classList.add('dim'),k*220))},1900);
+  if(STI===3)setTimeout(()=>{if(STI===3){const l=$('#stLogo').getBoundingClientRect();confetti(l.left+l.width/2,l.top+l.height/2,60)}},700);
+  if(STI===2&&$('#stLock').classList.contains('on'))$('#stNext').textContent='وماذا فعلت؟'}
+function storyGo(d){const n=STI+d;if(n<0)return;if(n>=ST_SLIDES.length){storyFinish();return}STI=n;storyShow()}
+function storyFinish(){const nm=($('#stName')||{}).value;if(nm&&nm.trim()){S.settings.user=nm.trim().slice(0,30);save();greet()}
+  confetti(innerWidth/2,innerHeight*.6,90);setTimeout(()=>storyEnd(),900)}
+function storyEnd(){try{localStorage.setItem(STK,'1')}catch(e){}const o=$('#story');if(!o)return;o.classList.add('off');document.body.classList.remove('touring');
+  setTimeout(()=>{o.remove();render(true);setTimeout(()=>{if(!$('#sheet').classList.contains('on'))installGuide()},500)},450)}
+function confetti(x,y,n){const C=['#f6dc94','#c99a3a','#22b083','#ffffff','#e8c66f','#5fd3a7'];
+  for(let i=0;i<n;i++){const d=document.createElement('i');d.className='st-cf';d.style.background=C[i%C.length];d.style.left=x+'px';d.style.top=y+'px';document.body.appendChild(d);
+    const a=Math.random()*Math.PI*2,v=120+Math.random()*260,dx=Math.cos(a)*v,dy=Math.sin(a)*v-220;
+    d.animate([{transform:'translate(0,0) rotate(0)',opacity:1},{transform:`translate(${dx}px,${dy+520}px) rotate(${Math.random()*900-450}deg)`,opacity:0}],{duration:1300+Math.random()*900,easing:'cubic-bezier(.2,.6,.4,1)',fill:'forwards'});
+    setTimeout(()=>d.remove(),2400)}}
+ACT.story=()=>storyStart();
 /* =====================================================================
    REPORTS (PDF + Excel) — per tab and full
    ===================================================================== */
@@ -2373,7 +2494,7 @@ function buildSideNav(){const L=[['wallets','المحافظ'],['savings','الا
     <div class="nav-sign d-only" data-act="go" data-v="set">الإصدار ${APP_VER}<br>تصميم وتطوير <b>${DEV}</b></div>`)}
 function splash(){const s=document.createElement('div');s.id='splash';s.innerHTML=`<div class="sp-in"><div class="logo">خ</div><h1>${APP}</h1><p>إدارة الأموال بوعي</p><small>تصميم وتطوير ${DEV} · الإصدار ${APP_VER}</small></div>`;
   document.body.appendChild(s);setTimeout(()=>s.classList.add('out'),1300);setTimeout(()=>s.remove(),1900)}
-load();BOOTED=true;VM=NOWK().split('-').map(Number);applyTheme();greet();buildSideNav();splash();render(true);syncBadge();setTimeout(()=>syncNow(),1500);setTimeout(()=>{if(!$('#sheet').classList.contains('on'))installGuide()},2300);
+load();BOOTED=true;VM=NOWK().split('-').map(Number);applyTheme();greet();buildSideNav();splash();render(true);syncBadge();setTimeout(()=>syncNow(),1500);if(storyShould())setTimeout(storyStart,1750);else setTimeout(()=>{if(!$('#sheet').classList.contains('on'))installGuide()},2300);
 matchMedia('(prefers-color-scheme: dark)').addEventListener&&matchMedia('(prefers-color-scheme: dark)').addEventListener('change',applyTheme);
 if('serviceWorker' in navigator&&/^https?:/.test(location.protocol))navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>

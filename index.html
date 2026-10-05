@@ -466,8 +466,14 @@ nav .fab .d-ic{display:none}
 .stars button.on{color:var(--gold1);text-shadow:0 0 14px rgba(243,214,138,.5)}
 .stars button:hover{transform:scale(1.15)}
 .rev{width:100%;padding:12px 14px;border-radius:14px;background:var(--surface2);border:1px solid var(--line);font-size:15px;color:var(--text);font-family:inherit}
-.social{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;justify-content:center}
-.social a{font-size:13px;padding:8px 14px;border-radius:20px;border:1px solid var(--line-strong);color:var(--gold);text-decoration:none;font-weight:600}
+.social{display:flex;gap:12px;margin-top:16px;justify-content:center}
+.social a{display:flex;flex-direction:column;align-items:center;gap:6px;text-decoration:none;font-size:11.5px;font-weight:600;color:var(--muted);transition:transform .2s}
+.social a:hover,.social a:active{transform:translateY(-3px)}
+.social a svg{width:26px;height:26px;color:#fff;box-sizing:content-box;padding:13px;border-radius:16px;box-shadow:0 6px 16px rgba(0,0,0,.25)}
+.social a.s-ig svg{background:radial-gradient(circle at 30% 107%,#fdf497 0%,#fdf497 5%,#fd5949 45%,#d6249f 60%,#285AEB 90%)}
+.social a.s-li svg{background:#0A66C2}
+.social a.s-em svg{background:linear-gradient(135deg,#c99a3a,#e9c77a);color:#1b1a14}
+.soc-mail{text-align:center;font-size:12px;color:var(--muted);margin-top:10px;direction:ltr}
 .ist{background:var(--surface2);border-radius:16px;padding:14px;margin-top:12px;font-size:13px;line-height:1.9}
 .ist ol{padding-inline-start:20px;margin-top:6px}.ist li{margin-bottom:6px}.ist small{color:var(--muted)}
 .key{display:inline-grid;place-items:center;min-width:26px;height:24px;padding:0 6px;border-radius:7px;background:var(--surface-solid);border:1px solid var(--line-strong);font-weight:700}
@@ -1925,7 +1931,11 @@ function reviewHTML(){return `<div class="card flat"><p style="font-size:13px;li
   <div class="stars" id="stars">${[1,2,3,4,5].map(i=>`<button data-act="rate" data-n="${i}" class="${i<=RATE?'on':''}" aria-label="${i}">★</button>`).join('')}</div>
   <textarea id="revTxt" rows="3" class="rev" placeholder="ما الذي أعجبك؟ وما الذي تقترح إضافته أو تحسينه؟"></textarea>
   <button class="btn gold" style="margin-top:10px" data-act="sendRev">✉️ إرسال التقييم</button>
-  <div class="social">${SOCIAL.instagram?`<a href="${SOCIAL.instagram}" target="_blank" rel="noopener">📷 إنستغرام</a>`:''}${SOCIAL.linkedin?`<a href="${SOCIAL.linkedin}" target="_blank" rel="noopener">💼 لينكدإن</a>`:''}<a href="mailto:${SOCIAL.email}">✉️ ${SOCIAL.email}</a></div></div>`}
+  <div class="social">${SOCIAL.instagram?`<a class="s-ig" href="${SOCIAL.instagram}" target="_blank" rel="noopener" aria-label="Instagram">${IC_IG}<span>إنستغرام</span></a>`:''}${SOCIAL.linkedin?`<a class="s-li" href="${SOCIAL.linkedin}" target="_blank" rel="noopener" aria-label="LinkedIn">${IC_LI}<span>لينكدإن</span></a>`:''}<a class="s-em" href="mailto:${SOCIAL.email}" aria-label="Email">${IC_EM}<span>البريد</span></a></div>
+  <p class="soc-mail num">${SOCIAL.email}</p></div>`}
+const IC_IG=`<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="5.5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4.3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.4" cy="6.6" r="1.3" fill="currentColor"/></svg>`;
+const IC_LI=`<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9.75h4v11H3zM9.5 9.75h3.8v1.5h.06c.53-1 1.83-2.05 3.77-2.05 4.03 0 4.77 2.65 4.77 6.1v5.45h-4v-4.83c0-1.15-.02-2.63-1.6-2.63-1.6 0-1.85 1.25-1.85 2.55v4.91h-4z"/></svg>`;
+const IC_EM=`<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="4.5" width="19" height="15" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3.5 6.5l8.5 6.5 8.5-6.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>`;
 ACT.rate=d=>{RATE=+d.n;$$('#stars button').forEach((b,i)=>b.classList.toggle('on',i<RATE))};
 ACT.sendRev=()=>{if(!RATE){toast('اختر عدد النجوم أولاً');return}const t=($('#revTxt')||{}).value||'';
   location.href=`mailto:${SOCIAL.email}?subject=${encodeURIComponent(`تقييم ${APP} — ${'★'.repeat(RATE)}${'☆'.repeat(5-RATE)}`)}&body=${encodeURIComponent(`التقييم: ${RATE} من 5\n\n${t}\n\n— ${APP} ${APP_VER} · ${SY.device}`)}`};
@@ -2146,7 +2156,7 @@ V.set=()=>{const st=S.settings,o=(k,opts)=>`<div class="opt">${opts.map(([v,l])=
     <p class="muted" style="font-size:12px;margin-top:12px;line-height:1.8">يعمل بدون إنترنت بعد أول فتح · بياناتك محفوظة على جهازك فقط ولا تُرسل لأي خادم.</p></div>`)}
   ${sec('للتقييم والمراجعة','',reviewHTML())}
   ${sec('طريقة التثبيت','',`<button class="btn ghost" data-act="installHelp">📲 كيف أثبّت التطبيق على الآيفون والأندرويد</button>`)}
-  <p class="note sign">© ${dg(new Date().getFullYear())} ${SIGN}</p>`};
+  <p class="note sign" dir="rtl"><bdi dir="ltr">© ${dg(new Date().getFullYear())}</bdi> ${SIGN}</p>`};
 ACT.setOpt=d=>{S.settings[d.k]=d.v;save();if(d.k==='theme')applyTheme();render(false)};
 document.addEventListener('change',e=>{
   if(e.target.id==='setRate'){const r=toNum(e.target.value);if(r>0){S.settings.rate=r;save();toast('حُدّث سعر الصرف ✓')}}

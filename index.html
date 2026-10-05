@@ -1919,7 +1919,7 @@ addEventListener('online',()=>syncNow());
 setInterval(()=>{if(document.visibilityState==='visible')syncNow()},60000);
 
 /* ---------- rating, review & contact ---------- */
-const SOCIAL={instagram:'',linkedin:'',email:'haidernassef4@gmail.com'};
+const SOCIAL={instagram:'https://www.instagram.com/h.nj2',linkedin:'https://www.linkedin.com/in/hnj2',email:'haidernassef4@gmail.com'};
 let RATE=0;
 function reviewHTML(){return `<div class="card flat"><p style="font-size:13px;line-height:1.8">رأيك يطوّر ${APP}. قيّم التطبيق واكتب ملاحظتك، وتصلني على البريد مباشرة.</p>
   <div class="stars" id="stars">${[1,2,3,4,5].map(i=>`<button data-act="rate" data-n="${i}" class="${i<=RATE?'on':''}" aria-label="${i}">★</button>`).join('')}</div>

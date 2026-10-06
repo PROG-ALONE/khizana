@@ -155,22 +155,21 @@ def sc_inapp(d, t, s):
 
 def sc_end(d, t, s):
     cx = W / 2
-    p = ph(t, 0.0, 0.9)
-    for rr, wd in ((130, 5), (76, 3)):
-        for base in (0, 45):
-            pts = [(cx + rr * p * math.cos(math.radians(base + 90 * k + 45 + t * 6)),
-                    520 + rr * p * math.sin(math.radians(base + 90 * k + 45 + t * 6))) for k in range(4)]
-            if p > 0.02:
-                d.polygon(pts, outline=col(GOLD, p), width=wd)
-    a = ph(t, 0.3, 0.7)
-    T(d, (cx, 690), "خِزانة", font("head", 150), GOLD, a, "ma")
+    a = ph(t, 0.0, 0.7)
+    T(d, (cx, 420), "تابعني للحلقة القادمة", font("semi", 50), MUTED, a, "ma")
     if a > 0.01:
-        d.text((cx, 930), "prog-alone.github.io/khizana", font=font("semi", 42), fill=col(CREAM, a), anchor="ma", direction="ltr")
-    b = ph(t, 1.0, 0.6)
+        d.text((cx, 510), "@h.nj2", font=font("bold", 120), fill=col(GOLD, a), anchor="ma", direction="ltr")
+    b = ph(t, 0.8, 0.6)
     if b > 0.01:
-        rrect(d, (M, 1080, R, 1330), 34, outline=col(GOLD, b), width=3)
-    T(d, (cx, 1105), "الحلقة القادمة", font("semi", 40), MUTED, b, "ma")
-    T(d, (cx, 1185), s["next"], font("bold", 58), CREAM, b, "ma")
+        rrect(d, (M, 760, R, 1010), 34, outline=col(GOLD, b), width=3)
+    T(d, (cx, 785), "الحلقة القادمة", font("semi", 40), MUTED, b, "ma")
+    T(d, (cx, 865), s["next"], font("bold", 58), CREAM, b, "ma")
+    c = ph(t, 1.6, 0.6)
+    if c > 0.01:
+        star8(d, cx - 150, 1150, 26, col(GOLD, c), 3)
+    T(d, (cx + 40, 1112), "خِزانة", font("head", 64), GOLD, c, "ma")
+    if c > 0.01:
+        d.text((cx, 1230), "prog-alone.github.io/khizana", font=font("body", 36), fill=col(MUTED, c), anchor="ma", direction="ltr")
 
 
 RENDER = dict(hook=sc_hook, define=sc_define, list=sc_list, compare=sc_compare,
@@ -203,6 +202,7 @@ def make_frame(spec, i):
     f = font("semi", 34)
     rrect(d, (M, 152, M + tw(tag, f) + 50, 214), 31, fill=GOLD)
     text(d, (M + 25 + tw(tag, f), 160), tag, f, BG)
+    d.text((W / 2, 166), "@h.nj2", font=font("semi", 34), fill=MUTED, anchor="ma", direction="ltr")
     d.rectangle((W - (W * t / dur), 0, W, 8), fill=GOLD)
     return img.convert("RGB")
 
@@ -224,6 +224,7 @@ def make_cover(spec):
     for ln in wrap(spec["cover_title"], f, R - M):
         text(d, (cx, y), ln, f, CREAM, "ma")
         y += 125
+    d.text((cx, 1560), "@h.nj2", font=font("semi", 44), fill=MUTED, anchor="ma", direction="ltr")
     return img
 
 

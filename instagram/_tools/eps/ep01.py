@@ -5,6 +5,9 @@ SPEC = dict(
     out="/home/claude/khz/out/ep01",
     duration=37.0,
     cover_title="ما هو المال؟",
+    teaser=dict(question="ورقة لا تُؤكل ولا تُلبس… فلماذا يقبلها الجميع مقابل تعب شهر كامل؟",
+                hint="فكّر بالجواب قبل أن تراه",
+                when="غداً الجمعة · ١٠ صباحاً"),
     music_scenes=[0, 2, 4, 6.5, 9, 11.5, 13],
     scenes=[
         dict(bar=0, type="hook", still=3.8,

@@ -117,8 +117,8 @@ LEAD = {6: [(0, 74, 1), (1, 75, 1), (2, 78, 1.5), (3.5, 79, .5)],
 for b in range(NBARS):
     t0 = b * BAR
     root, notes = CHORDS[b % 4]
-    full = 2 <= b <= 11
-    last = b >= 12
+    full = 2 <= b < NBARS - 2
+    last = b >= NBARS - 2
     add(pad(notes, BAR + 0.8), t0, 0, 0.55 if not last else 0.7)
     # arpeggio pluck on 8ths (sparser in intro/outro)
     for k, m in enumerate(ARP[b % 4]):
@@ -134,8 +134,8 @@ for b in range(NBARS):
                 add(snare(), t0 + k * BEAT, 0.1, 0.35)
         for k in range(8):
             add(hat(), t0 + k * BEAT / 2 + (0.03 if k % 2 else 0), 0.2, 0.12 if k % 2 else 0.18)
-    if b in LEAD:
-        for off, m, dur in LEAD[b]:
+    if full and (b % 16) in LEAD:
+        for off, m, dur in LEAD[b % 16]:
             add(pluck(m - 12, dur * BEAT + 0.6, 1.0), t0 + off * BEAT, -0.1, 0.42)
 
 # scene-change chimes, alternating notes of the D chord

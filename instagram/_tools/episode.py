@@ -172,8 +172,77 @@ def sc_end(d, t, s):
         d.text((cx, 1230), "prog-alone.github.io/khizana", font=font("body", 36), fill=col(MUTED, c), anchor="ma", direction="ltr")
 
 
+def sc_points(d, t, s):
+    kicker(d, 340, s["kicker"], ph(t, 0))
+    y = title(d, 460, s["title"], ph(t, 0.15), 66) + 40
+    f = font("semi", 46)
+    for k, pt in enumerate(s["points"]):
+        a = ph(t, 1.2 + k * 1.3, 0.5)
+        lines = wrap(pt, f, R - M - 150)
+        h = 70 + 62 * len(lines)
+        x = R + (1 - a) * 300
+        if a > 0.01:
+            rrect(d, (x - (R - M), y, x, y + h), 30, fill=col(PANEL, a))
+            d.ellipse((x - 80, y + h / 2 - 18, x - 44, y + h / 2 + 18), fill=col(GOLD, a))
+        for j, ln in enumerate(lines):
+            T(d, (x - 110, y + 32 + j * 62), ln, f, CREAM, a)
+        y += h + 26
+
+
+def sc_flowstock(d, t, s):
+    kicker(d, 340, "الدخل تدفّق… والثروة مخزون", ph(t, 0))
+    T(d, (R, 460), "تخيّل حوض ماء", font("bold", 70), CREAM, ph(t, 0.2))
+    bx0, by0, bx1, by1 = M + 40, 820, R - 40, 1240
+    a = ph(t, 0.6)
+    if a > 0.01:
+        d.rounded_rectangle((bx0, by0, bx1, by1), 44, outline=col(CREAM, a), width=7)
+    lvl = ease_io((t - 1.2) / 6.0)
+    top = by1 - 12 - (by1 - by0 - 130) * lvl
+    if lvl > 0.01:
+        d.rounded_rectangle((bx0 + 12, top, bx1 - 12, by1 - 12), 34, fill=(46, 92, 120, 255))
+    tx = bx1 - 160
+    if a > 0.01:
+        rrect(d, (tx - 40, 640, tx + 160, 685), 18, fill=col(TEAL, a))
+        rrect(d, (tx - 40, 640, tx + 10, 730), 14, fill=col(TEAL, a))
+        for k in range(6):
+            yy = 740 + ((t * 120 + k * 50) % 300)
+            if yy < top:
+                d.line((tx - 15, yy, tx - 15, yy + 24), fill=col(TEAL, a), width=10)
+    T(d, (bx1 - 260, 650), "الدخل يتدفّق", font("bold", 46), TEAL, ph(t, 1.0))
+    b = ph(t, 2.4)
+    if b > 0.01:
+        for k in range(4):
+            yy = by1 + ((t * 90 + k * 30) % 110)
+            d.line((bx0 + 120, yy, bx0 + 120, yy + 18), fill=col(RED, b), width=10)
+    T(d, (bx0 + 170, by1 + 40), "المصروف يتسرّب", font("bold", 46), RED, b, "la")
+    T(d, (W / 2, by0 + 170), "الثروة: ما يبقى", font("bold", 58), CREAM, ph(t, 4.0), "ma")
+    T(d, (W / 2, 1440), "الدخل يُقاس بمدّة", font("semi", 48), GOLD, ph(t, 5.2), "ma")
+    T(d, (W / 2, 1510), "والثروة تُقاس بلحظة", font("semi", 48), GOLD, ph(t, 6.0), "ma")
+
+
+def from_long(spec):
+    """Vertical explainer scenes built from the long-video scenes (for TikTok)."""
+    out = []
+    for sc in spec["long_scenes"]:
+        k = sc["type"]
+        if k == "title":
+            out.append(dict(bar=sc["bar"], type="hook", lines=sc["lines"], sub=sc["sub"]))
+        elif k == "define":
+            out.append(dict(bar=sc["bar"], type="points", kicker=sc["kicker"], title=sc["title"], points=sc["points"]))
+        elif k == "cards":
+            out.append(dict(bar=sc["bar"], type="list", kicker=sc["kicker"], title=sc["title"],
+                            items=[("✓", f"{h}: {e}", ex) for h, e, ex, c in sc["cards"]]))
+        elif k == "end":
+            out.append(dict(bar=sc["bar"], type="end", next=spec["next"]))
+        else:
+            out.append(dict(sc))
+    for sc in out:
+        sc.setdefault("still", 7.5)
+    return out
+
+
 RENDER = dict(hook=sc_hook, define=sc_define, list=sc_list, compare=sc_compare,
-              equation=sc_equation, inapp=sc_inapp, end=sc_end)
+              equation=sc_equation, inapp=sc_inapp, end=sc_end, points=sc_points, flowstock=sc_flowstock)
 
 
 def make_frame(spec, i):
@@ -231,6 +300,12 @@ def make_cover(spec):
 if __name__ == "__main__":
     spec = runpy.run_path(sys.argv[1])["SPEC"]
     out = spec["out"]
+    music, target = "music.wav", "reel.mp4"
+    if "explainer" in sys.argv:
+        spec["scenes"] = from_long(spec)
+        spec["duration"] = spec["long_nbars"] * BAR + 1.0
+        music, target = "music_long.wav", "explainer.mp4"
+        sys.argv.remove("explainer")
     os.makedirs(out, exist_ok=True)
     make_cover(spec).save(f"{out}/cover.jpg", quality=94)
     if len(sys.argv) > 2:
@@ -239,9 +314,9 @@ if __name__ == "__main__":
             make_frame(spec, int(tt * FPS)).resize((360, 640)).save(f"/tmp/claude-0/ep_{sc['bar']}.jpg")
         sys.exit()
     p = subprocess.Popen(["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}",
-                          "-r", str(FPS), "-i", "-", "-i", f"{out}/music.wav", "-c:v", "libx264", "-preset", "medium",
+                          "-r", str(FPS), "-i", "-", "-i", f"{out}/{music}", "-c:v", "libx264", "-preset", "medium",
                           "-crf", "18", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k", "-shortest",
-                          "-movflags", "+faststart", f"{out}/reel.mp4"], stdin=subprocess.PIPE)
+                          "-movflags", "+faststart", f"{out}/{target}"], stdin=subprocess.PIPE)
     for i in range(int(spec["duration"] * FPS)):
         p.stdin.write(make_frame(spec, i).tobytes())
     p.stdin.close(); p.wait(); print("done", p.returncode)

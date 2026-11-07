@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#060d0b">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -105,7 +105,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:cal
 .stat{background:rgba(255,255,255,.06);border:1px solid rgba(243,214,138,.14);border-radius:16px;padding:10px;transition:.3s;min-width:0}
 .stat:hover{background:rgba(243,214,138,.12);transform:translateY(-2px)}
 .stat small{font-size:11px;opacity:.75;display:block}
-.stat b{font-size:13.5px;display:block;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stat b{font-size:clamp(11px,3.2vw,13.5px);display:block;margin-top:3px;overflow-wrap:anywhere;line-height:1.35}
 
 .sec{margin-top:24px}
 .sec-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px}
@@ -588,21 +588,28 @@ const CAT_DEF=[
   ['i_salary','الراتب','💼','income',''],['i_rent','إيجارات العقارات','🏢','income',''],['i_car','عائد السيارة','🚗','income',''],
   ['i_stock','أرباح الأسهم','📈','income',''],['i_other','دخل آخر','💰','income','']];
 function blank(){return {v:1,demo:false,lastWallet:null,
-  settings:{rate:1450,digits:'en',theme:'auto',budget:'free',user:'',sadaqaPct:0,sadaqaBase:'income'},
+  settings:{rate:1450,digits:'en',theme:'auto',budget:'free',mode:'simple',fixedSalary:0,user:'',sadaqaPct:0,sadaqaBase:'income'},
   zakat:{base:'gold',goldPrice:0,silverPrice:0,priceDate:'',hawlStart:'',jewelry:false,deduct:true,receivables:true,jam:true,goals:true,trade:0,otherCash:0,silverGrams:0,gold:[],history:[]},
   wallets:[],cats:CAT_DEF.map(([id,name,icon,kind,group])=>({id,name,icon,kind,group,limit:0})),
   tx:[],commits:[],people:[],jams:[],props:[],invs:[],debts:[],goals:[]}}
 function load(){try{S=JSON.parse(localStorage.getItem(LS)||'null')}catch(e){S=null}
   if(!S||!S.settings){S=blank()}
-  else if(S.demo){const st=S.settings;S=blank();S.settings={...S.settings,...st,user:''};S.zakat=blank().zakat}
-  normalize(); save()}
+  else{const st=S.settings;if(st.mode===undefined)st.mode='advanced';if(S.demo){S=blank();S.settings={...S.settings,...st,user:''};S.zakat=blank().zakat}}
+  normalize();if(S.settings.mode==='simple')ensureSimpleWallet();save()}
 function normalize(){const b=blank();for(const k in b) if(S[k]===undefined) S[k]=b[k];
   for(const k in b.settings) if(S.settings[k]===undefined) S.settings[k]=b.settings[k];
+  if(!['simple','advanced'].includes(S.settings.mode))S.settings.mode='advanced';
+  S.settings.fixedSalary=Math.max(0,+S.settings.fixedSalary||0);
   for(const k in b.zakat) if(S.zakat[k]===undefined) S.zakat[k]=b.zakat[k];
   b.cats.forEach(c=>{if(!S.cats.some(x=>x.id===c.id))S.cats.push(c)});
   S.people.forEach(p=>{if(!p.group)p.group='family'});
   S.jams.forEach(j=>{if(j.mode==='manage'){j.members=j.members||[];j.turns=j.turns||[];j.pay=j.pay||{};j.delivered=j.delivered||{};j.cover=j.cover||{};while(j.turns.length<j.months)j.turns.push([])}})}
 function save(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){toast('تعذّر الحفظ على الجهاز')}}
+function ensureSimpleWallet(){
+  let w=S.wallets.find(item=>item.id==='simple-ledger');
+  if(!w){w={id:'simple-ledger',name:'مصروفات الراتب',type:'cash',currency:'IQD',opening:0,color:'#287b58'};S.wallets.unshift(w)}
+  return w;
+}
 
 /* ---------- lookups ---------- */
 const wById=id=>S.wallets.find(w=>w.id===id);
@@ -782,7 +789,8 @@ function bindFx(scope){
 const V={}, ACT={};
 let VIEW='home', PARAM=null, VM=null, HIST=[];
 const NAV_OF={wallet:'wallets',jamd:'jam'};
-function go(v,p,keep){if(!keep&&(VIEW!==v||PARAM!==p))HIST.push([VIEW,PARAM]);VIEW=v;PARAM=p??null;render(true);window.scrollTo(0,0)}
+const SIMPLE_VIEWS=new Set(['home','tx','cats','set']);
+function go(v,p,keep){if(S.settings.mode==='simple'&&!SIMPLE_VIEWS.has(v)){toast('هذا القسم متاح في النمط المتقدم.');return}if(!keep&&(VIEW!==v||PARAM!==p))HIST.push([VIEW,PARAM]);VIEW=v;PARAM=p??null;render(true);window.scrollTo(0,0)}
 function render(anim){
   const fn=V[VIEW]||V.home;let html;
   try{html=fn(PARAM)}catch(err){console.error(err);html=`<div class="card flat empty"><div class="ei">⚠</div><p>حدث خطأ في عرض هذه الصفحة<br><small>${esc(err.message)}</small></p><button class="mini-btn" data-act="go" data-v="home">الرئيسية</button></div>`}
@@ -869,8 +877,24 @@ function walletCard(w,range){
 /* =====================================================================
    HOME
    ===================================================================== */
+function simpleHome(T,f,t){
+  const salary=Math.max(0,+S.settings.fixedSalary||0),remaining=salary-T.expense;
+  const expenses=S.tx.filter(x=>x.type==='expense'&&inRange(x.date,f,t));
+  const categories=S.cats.filter(c=>c.kind==='expense').map(c=>({c,v:sumTx(x=>x.type==='expense'&&x.catId===c.id&&inRange(x.date,f,t))}))
+    .filter(x=>x.v>0).sort((a,b)=>b.v-a.v).slice(0,5);
+  const max=categories.length?categories[0].v:1;
+  const recent=expenses.slice().sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0).slice(0,6);
+  let h=pageHead('راتبي ومصروفي',repBtn('tx')+`<button class="mini-btn gold" data-act="salarySet">تعديل الراتب</button>`)+monthBar();
+  h+=`<div class="hero"><div class="pattern"></div><small>راتب شهري ثابت</small><div class="big">${cnt(salary)} <em>د.ع</em></div>
+    <div class="stats"><div class="stat"><small>المصروف</small><b>${cnt(T.expense)}</b></div><div class="stat"><small>المتبقي</small><b>${cnt(remaining)}</b></div><div class="stat"><small>حركات الصرف</small><b>${dg(expenses.length)}</b></div></div></div>`;
+  h+=`<div class="qrow"><button class="btn gold" data-act="addT" data-t="expense">＋ سجّل مصروفاً</button><button class="btn ghost" data-act="go" data-v="tx">كل المصروفات</button></div>`;
+  h+=sec('أين صُرف الراتب؟','',`<div class="card">${categories.map((entry,i)=>`<div class="li"><div class="ic">${entry.c.icon}</div><div class="info"><div class="row"><b>${esc(entry.c.name)}</b>${cnt(entry.v)}</div>${barH(entry.v/max*100,PAL[i%PAL.length])}</div></div>`).join('')||'<p class="muted" style="font-size:13px">سجّل أول مصروف لتظهر لك ملخصات الراتب هنا.</p>'}</div>`);
+  h+=sec('آخر المصروفات','',`<div class="card flat" style="padding:4px 14px">${recent.map(txRow).join('')||'<p class="muted" style="padding:14px 0;font-size:13px">لا توجد مصروفات مسجلة لهذا الشهر.</p>'}</div>`);
+  return h;
+}
 V.home=()=>{
   const [y,m]=VM,range=monthRange(y,m),T=totals(...range),tb=totalAt(range[1]),[f,t]=range;
+  if(S.settings.mode==='simple')return simpleHome(T,f,t);
   let h='';
   if(!S.wallets.length)h+=`<div class="card flat" style="margin-bottom:16px;border-color:var(--line-strong)"><b class="kufi" style="font-size:18px">مرحباً بك في ${APP} ✦</b>
     <p class="muted" style="font-size:13px;line-height:1.9;margin-top:6px">ابدأ بثلاث خطوات: أضف محافظك وبطاقاتك برصيدها الحالي، ثم اكتب اسمك وسعر الصرف من الإعدادات، ثم سجّل أول حركة من زر ＋.</p>
@@ -940,7 +964,9 @@ function ruleBlock(T,f,t){const base=T.income||1;
 /* =====================================================================
    MORE
    ===================================================================== */
-V.more=()=>`${pageHead('كل الأقسام')}<div class="tiles">${tile('wallets','المحافظ',`${dg(S.wallets.length)} محفظة`)}${tile('tx','الحركات','كل العمليات')}${tile('cats','الفئات','الصرف والدخل')}
+V.more=()=>S.settings.mode==='simple'
+  ?`${pageHead('الأقسام الأساسية')}<div class="tiles">${tile('home','الرئيسية','راتبي ومصروفي')}${tile('tx','المصروفات','كل الحركات المسجلة')}${tile('cats','فئات الصرف','ملخص المصروف')}${tile('set','الإعدادات','النمط والراتب')}</div>`
+  :`${pageHead('كل الأقسام')}<div class="tiles">${tile('wallets','المحافظ',`${dg(S.wallets.length)} محفظة`)}${tile('tx','الحركات','كل العمليات')}${tile('cats','الفئات','الصرف والدخل')}
   ${tile('fam','العائلة والأصدقاء',`${dg(S.people.length)} أشخاص`)}${tile('commit','الالتزامات','الشهرية')}${tile('goals','الأهداف','الادخار')}
   ${tile('sadaqa','الصدقات','الشهرية')}${tile('zakat','الزكاة','والنصاب')}${tile('cats','الفئات','أضف فئاتك')}
   ${tile('jam','الجمعيات',`${dg(S.jams.length)} جمعية`)}${tile('prop','العقارات',`${dg(S.props.length)} عقار`)}${tile('debts','الديون','لي وعليّ')}
@@ -1001,40 +1027,47 @@ let TXF='all';
 V.tx=()=>{
   const [f,t]=monthRange(...VM);
   const flt={all:()=>true,expense:x=>x.type==='expense',income:x=>x.type==='income',transfer:x=>x.type==='transfer',other:x=>!['expense','income','transfer'].includes(x.type)}[TXF];
-  const txs=S.tx.filter(x=>inRange(x.date,f,t)&&flt(x)).sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0);
-  let h=pageHead('الحركات',repBtn('tx')+`<button class="mini-btn" data-act="add">＋ حركة</button>`)+monthBar();
-  h+=`<div class="seg">${[['all','الكل'],['expense','مصروف'],['income','دخل'],['transfer','تحويل'],['other','أخرى']].map(([k,l])=>`<button class="${TXF===k?'on':''}" data-act="txf" data-k="${k}">${l}</button>`).join('')}</div>`;
+  const simple=S.settings.mode==='simple';
+  const txs=S.tx.filter(x=>inRange(x.date,f,t)&&(simple?x.type==='expense':flt(x))).sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0);
+  let h=pageHead(simple?'المصروفات':'الحركات',repBtn('tx')+`<button class="mini-btn gold" data-act="${simple?'addT':'add'}"${simple?' data-t="expense"':''}>＋ ${simple?'مصروف':'حركة'}</button>`)+monthBar();
+  if(!simple)h+=`<div class="seg">${[['all','الكل'],['expense','مصروف'],['income','دخل'],['transfer','تحويل'],['other','أخرى']].map(([k,l])=>`<button class="${TXF===k?'on':''}" data-act="txf" data-k="${k}">${l}</button>`).join('')}</div>`;
   const T=totals(f,t);
-  h+=`<div class="kpis">${kpi('الدخل',`<span class="in">${cnt(T.income)}</span>`)}${kpi('المصروف',`<span class="out">${cnt(T.expense)}</span>`)}</div>`;
+  h+=simple
+    ?`<div class="kpis">${kpi('الراتب الثابت',cnt(S.settings.fixedSalary||0))}${kpi('المصروف',`<span class="out">${cnt(T.expense)}</span>`)}</div>`
+    :`<div class="kpis">${kpi('الدخل',`<span class="in">${cnt(T.income)}</span>`)}${kpi('المصروف',`<span class="out">${cnt(T.expense)}</span>`)}</div>`;
   const groups={};txs.forEach(x=>(groups[x.date]=groups[x.date]||[]).push(x));
   h+=Object.keys(groups).map(d=>`<div class="sec" style="margin-top:16px"><div class="row muted" style="margin-bottom:6px;font-size:12px"><span>${dLabelY(d)}</span><span>${dg(groups[d].length)} حركة</span></div><div class="card flat" style="padding:4px 14px">${groups[d].map(txRow).join('')}</div></div>`).join('')||'<div class="sec">'+empty('لا توجد حركات بهذا الفلتر في هذا الشهر','add','حركة جديدة')+'</div>';
   return h};
-ACT.txf=d=>{TXF=d.k;render(false)};
+ACT.txf=d=>{if(S.settings.mode==='simple')return;TXF=d.k;render(false)};
 function txForm(t,preset={}){
   if(!S.wallets.length){toast('أضف محفظة أولاً');return walletForm()}
   const isNew=!t;t=t||{};
   const locked=!!t.ref||(!!t.type&&!['expense','income','transfer'].includes(t.type));
-  const type=t.type||preset.type||'expense',wopts=walletOpts();
+  const simple=S.settings.mode==='simple';
+  const simpleWallet=simple?ensureSimpleWallet():null;
+  const type=simple?'expense':t.type||preset.type||'expense';
+  const wopts=simple?[[t.walletId||simpleWallet.id,wById(t.walletId||simpleWallet.id)?.name||simpleWallet.name]]:walletOpts();
+  const catOptions=catOpts(type==='income'?'income':'expense');
   const fields=[
-    locked?null:{k:'type',label:'النوع',type:'chips',options:[['expense','▼ مصروف'],['income','▲ دخل'],['transfer','🔁 تحويل']]},
+    locked?null:{k:'type',label:'النوع',type:'chips',options:[['expense','▼ مصروف'],['income','▲ دخل'],['transfer','🔁 تحويل']],hide:simple},
     {k:'amount',label:'المبلغ',type:'amount',req:true,focus:isNew},
-    {k:'walletId',label:type==='transfer'?'من محفظة':'المحفظة',type:'select',options:wopts},
-    locked?null:{k:'toWalletId',label:'إلى محفظة',type:'select',options:wopts,hide:type!=='transfer'},
+    {k:'walletId',label:type==='transfer'?'من محفظة':'المحفظة',type:'select',options:wopts,hide:simple},
+    locked?null:{k:'toWalletId',label:'إلى محفظة',type:'select',options:wopts,hide:simple||type!=='transfer'},
     locked?null:{k:'toAmount',label:'المبلغ المستلم بالعملة الأخرى',type:'number',hide:true,hint:'محسوب من سعر الصرف — عدّله إن اختلف'},
-    locked?null:{k:'catId',label:'الفئة',type:'chips',options:[...catOpts(type==='income'?'income':'expense'),['__new','＋ فئة جديدة']],hide:type==='transfer'},
+    locked?null:{k:'catId',label:'الفئة',type:'chips',options:simple?catOptions:[...catOptions,['__new','＋ فئة جديدة']],hide:type==='transfer'},
     locked?null:{k:'newCat',label:'اسم الفئة الجديدة',ph:'مثلاً: اشتراكات',hide:true},
-    locked?null:{k:'forWho',label:'لمن؟',type:'chips',options:forOpts(),hide:type!=='expense'},
+    locked?null:{k:'forWho',label:'لمن؟',type:'chips',options:forOpts(),hide:simple||type!=='expense'},
     locked?null:{k:'forNew',label:'اسم الشخص',ph:'صديق، جار، قريب...',hide:true},
     locked?null:{k:'forGroup',label:'هو من',type:'chips',options:[['friend','الأصدقاء'],['family','العائلة']],hide:true},
     {k:'date',label:'التاريخ',type:'date'},{k:'note',label:'ماذا؟ / ملاحظة',ph:'مثلاً: غداء، دواء، هدية...'}];
-  const values={type,amount:t.amount??'',walletId:t.walletId||preset.w||lastWallet(),toWalletId:t.toWalletId||(S.wallets.find(w=>w.id!==(t.walletId||lastWallet()))||{}).id,
+  const values={type,amount:t.amount??'',walletId:simple?(t.walletId||simpleWallet.id):t.walletId||preset.w||lastWallet(),toWalletId:t.toWalletId||(S.wallets.find(w=>w.id!==(t.walletId||lastWallet()))||{}).id,
     toAmount:t.toAmount??'',catId:t.catId||(type==='income'?'i_salary':'e_home'),forWho:t.personId?'p:'+t.personId:(t.forKind&&t.forKind!=='person'?t.forKind:'me'),forGroup:'friend',date:t.date||TODAY(),note:t.note||''};
   let kind=type==='income'?'income':'expense',touched=t.toAmount!=null&&t.toAmount!=='';
   form({title:isNew?'حركة جديدة':(locked?'تعديل '+(TYPE_L[t.type]||'حركة'):'تعديل حركة'),fields,values,submit:isNew?'إضافة':'حفظ',
     top:locked&&t.ref?`<p class="muted" style="font-size:12px;margin-top:8px">هذه الحركة مرتبطة بقسم آخر (${esc(t.note||TYPE_L[t.type])}) — يمكنك تعديل المبلغ والمحفظة والتاريخ أو حذفها.</p>`:'',
     after:fr=>{const ta=fr.elements.toAmount;if(ta)ta.addEventListener('input',e=>{if(e.isTrusted)touched=true})},
     onInput:(v,fr)=>{if(locked)return;
-      showF('toWalletId',v.type==='transfer');showF('catId',v.type!=='transfer');showF('forWho',v.type==='expense');
+      showF('toWalletId',!simple&&v.type==='transfer');showF('catId',v.type!=='transfer');showF('forWho',!simple&&v.type==='expense');
       showF('newCat',v.type!=='transfer'&&v.catId==='__new');showF('forNew',v.type==='expense'&&v.forWho==='new');showF('forGroup',v.type==='expense'&&v.forWho==='new');
       const lab=fr.querySelector('[data-f="walletId"] label');if(lab)lab.textContent=v.type==='transfer'?'من محفظة':'المحفظة';
       const nk=v.type==='income'?'income':'expense';
@@ -1057,7 +1090,7 @@ function txForm(t,preset={}){
       save();render(false);toast(isNew?'تمت الإضافة ✓':'تم الحفظ ✓')},
     danger:isNew?null:{label:'حذف الحركة',onClick:()=>{if(confirm('حذف هذه الحركة؟')){removeTx(t.id);save();closeSheet();render(false);toast('تم الحذف')}}}})}
 ACT.add=d=>txForm(null,{w:d&&d.w});
-ACT.addT=d=>txForm(null,{type:d.t});
+ACT.addT=d=>txForm(null,{type:S.settings.mode==='simple'?'expense':d.t});
 ACT.editTx=d=>txForm(S.tx.find(x=>x.id===d.id));
 
 /* =====================================================================
@@ -1065,18 +1098,20 @@ ACT.editTx=d=>txForm(S.tx.find(x=>x.id===d.id));
    ===================================================================== */
 let CATK='expense';
 V.cats=()=>{
+  const simple=S.settings.mode==='simple';
+  if(simple)CATK='expense';
   const [f,t]=monthRange(...VM);
   const list=S.cats.filter(c=>c.kind===CATK).map(c=>({c,v:sumTx(x=>x.type===CATK&&x.catId===c.id&&inRange(x.date,f,t)),n:S.tx.filter(x=>x.type===CATK&&x.catId===c.id&&inRange(x.date,f,t)).length})).sort((a,b)=>b.v-a.v);
   const tot=sum(list,o=>o.v),max=list.length?Math.max(1,list[0].v):1;
-  let h=pageHead('الفئات',repBtn('cats')+`<button class="mini-btn" data-act="catNew">＋ فئة</button>`)+monthBar();
-  h+=`<div class="seg"><button class="${CATK==='expense'?'on':''}" data-act="catk" data-k="expense">فئات الصرف</button><button class="${CATK==='income'?'on':''}" data-act="catk" data-k="income">مصادر الدخل</button></div>`;
+  let h=pageHead(simple?'فئات الصرف':'الفئات',repBtn('cats')+`<button class="mini-btn" data-act="catNew">＋ فئة</button>`)+monthBar();
+  if(!simple)h+=`<div class="seg"><button class="${CATK==='expense'?'on':''}" data-act="catk" data-k="expense">فئات الصرف</button><button class="${CATK==='income'?'on':''}" data-act="catk" data-k="income">مصادر الدخل</button></div>`;
   h+=`<div class="card">${donut(list.map(o=>({l:o.c.name,v:o.v})),{center:CATK==='expense'?'المصروف':'الدخل'})}</div>`;
   const ms=lastMonths(VM[0],VM[1],6).map(([yy,mm])=>{const [a,b]=monthRange(yy,mm);return {l:mShort(yy,mm),v:[sumTx(x=>x.type===CATK&&inRange(x.date,a,b))]}});
   h+=sec(CATK==='expense'?'المصروف آخر 6 أشهر':'الدخل آخر 6 أشهر','',`<div class="card">${barChart(ms,[{name:CATK==='expense'?'المصروف':'الدخل',color:CATK==='expense'?'var(--expense)':'var(--em)'}])}</div>`);
   h+=sec('التفاصيل',`<span class="muted" style="font-size:12px">اضغط الفئة لتعديلها</span>`,`<div class="card flat" style="padding:4px 14px">${list.map((o,i)=>`<div class="li" data-act="catEdit" data-id="${o.c.id}"><div class="ic">${o.c.icon}</div><div class="info"><div class="row"><b>${esc(o.c.name)}</b><span class="num">${money(o.v)}</span></div>
     <small>${dg(o.n)} حركة · ${fmtN(tot?o.v/tot*100:0,1)}%${o.c.limit?` · الحد ${money(o.c.limit)}`:''}${CATK==='expense'?` · ${o.c.group==='need'?'احتياج':'رغبة'}`:''}</small>${barH(o.c.limit?o.v/o.c.limit*100:o.v/max*100,o.c.limit&&o.v>o.c.limit?'var(--expense)':PAL[i%PAL.length])}</div></div>`).join('')}</div>`);
   return h};
-ACT.catk=d=>{CATK=d.k;render(false)};
+ACT.catk=d=>{if(S.settings.mode==='simple')return;CATK=d.k;render(false)};
 function catForm(c){const isNew=!c;c=c||{name:'',icon:'📦',kind:CATK,group:'need',limit:0};
   const used=!isNew&&S.tx.some(t=>t.catId===c.id);
   form({title:isNew?'فئة جديدة':'تعديل الفئة',fields:[
@@ -1767,8 +1802,12 @@ function menuSub(v){const [f,t]=monthRange(...NOWK().split('-').map(Number));try
   case 'goals':return dg(S.goals.length)+' هدف';case 'commit':return dg(S.commits.filter(c=>c.active).length)+' شهرية';case 'fam':return dg(S.people.length)+' أشخاص';
   case 'inv':return dg(S.invs.length)+' استثمار';case 'sadaqa':return +S.settings.sadaqaPct?fmtN(S.settings.sadaqaPct,2)+'%':'حدّد نسبة';
   case 'zakat':return zakatCalc().reached?'بلغت النصاب':'الحساب';case 'tx':return dg(S.tx.filter(x=>inRange(x.date,f,t)).length)+' هذا الشهر';case 'cats':return dg(S.cats.length)+' فئة'}}catch(e){}return ''}
-ACT.menu=()=>openSheet(`${sheetHead('الأقسام')}<div class="menu-q"><button class="btn gold" data-act="mAdd">＋ حركة جديدة</button><button class="btn ghost" data-act="report" data-s="all">📄 التقرير الشامل</button></div>
-  <div class="tiles" style="margin-top:10px">${MENU.map(([v,l])=>tile(v,l,menuSub(v))).join('')}</div>`);
+ACT.menu=()=>{
+  if(S.settings.mode==='simple')return openSheet(`${sheetHead('الأساسيات')}<div class="menu-q"><button class="btn gold" data-act="addT" data-t="expense">＋ سجّل مصروفاً</button></div>
+    <div class="tiles" style="margin-top:10px">${tile('home','الرئيسية','راتبي ومصروفي')}${tile('tx','المصروفات','كل الحركات')}${tile('cats','فئات الصرف','ملخص المصروف')}${tile('set','الإعدادات','الراتب والنمط')}</div>`);
+  openSheet(`${sheetHead('الأقسام')}<div class="menu-q"><button class="btn gold" data-act="mAdd">＋ حركة جديدة</button><button class="btn ghost" data-act="report" data-s="all">📄 التقرير الشامل</button></div>
+    <div class="tiles" style="margin-top:10px">${MENU.map(([v,l])=>tile(v,l,menuSub(v))).join('')}</div>`);
+};
 ACT.mAdd=()=>{closeSheet();setTimeout(()=>txForm(),60)};
 ACT.fab=()=>innerWidth>=900?txForm():ACT.menu();
 
@@ -2441,7 +2480,18 @@ ACT.rxlsx=async()=>{toast('جارٍ تجهيز Excel…');
    SETTINGS & BACKUP
    ===================================================================== */
 V.set=()=>{const st=S.settings,o=(k,opts)=>`<div class="opt">${opts.map(([v,l])=>`<button class="${String(st[k])===String(v)?'on':''}" data-act="setOpt" data-k="${k}" data-v="${v}">${l}</button>`).join('')}</div>`;
+  const modeRow=`<div class="set"><div><b>نمط خِزانة</b><small>بسيط للراتب والمصروف · متقدم لكل الأدوات</small></div><div class="opt"><button class="${st.mode==='simple'?'on':''}" data-act="appMode" data-v="simple">بسيط</button><button class="${st.mode==='advanced'?'on':''}" data-act="appMode" data-v="advanced">متقدم</button></div></div>`;
+  if(st.mode==='simple')return pageHead('إعدادات بسيطة')+`<div class="card flat" style="padding:4px 16px">
+    ${modeRow}
+    <div class="set"><div><b>اسمك</b><small>يظهر في الترحيب والتقارير</small></div><input class="inp" id="setUser" value="${esc(st.user)}" placeholder="اكتب اسمك" style="width:130px"></div>
+    <div class="set"><div><b>الراتب الشهري الثابت</b><small>مرجع للميزانية، ولا يُسجّل كحركة تلقائية</small></div><button class="mini-btn gold" data-act="salarySet">${money(st.fixedSalary||0)}</button></div>
+    <div class="set"><div><b>الأرقام</b><small>طريقة عرض الأرقام في التطبيق</small></div>${o('digits',[['en','123'],['ar','١٢٣']])}</div>
+    <div class="set"><div><b>المظهر</b><small>ليلي أو نهاري أو حسب الجهاز</small></div>${o('theme',[['light','نهاري'],['dark','ليلي'],['auto','تلقائي']])}</div></div>
+    ${sec('بياناتك','',`<div class="card flat"><p class="muted" style="font-size:12px;line-height:1.8">بياناتك محفوظة على هذا الجهاز. صدّر نسخة احتياطية قبل تغيير الجهاز.</p><div class="btns"><button class="btn gold" data-act="backup">⬇ تصدير نسخة</button><button class="btn ghost" data-act="restore">⬆ استيراد نسخة</button></div><button class="btn danger" data-act="wipe" style="margin-top:10px">مسح كل البيانات</button><input type="file" id="restoreFile" accept=".json,application/json" style="display:none"></div>`)}
+    <p class="note sign" dir="rtl"><bdi dir="ltr">© ${dg(new Date().getFullYear())}</bdi> ${SIGN}</p>`;
   return pageHead('الإعدادات')+`<div class="card flat" style="padding:4px 16px">
+    ${modeRow}
+    <div class="set"><div><b>الراتب الشهري الثابت</b><small>يظهر في النمط البسيط كمرجع للميزانية</small></div><button class="mini-btn gold" data-act="salarySet">${money(st.fixedSalary||0)}</button></div>
     <div class="set"><div><b>اسمك</b><small>يظهر في الترحيب والتقارير</small></div><input class="inp" id="setUser" value="${esc(st.user)}" placeholder="اكتب اسمك" style="width:130px"></div>
     <div class="set"><div><b>الأرقام</b><small>طريقة عرض الأرقام في كل التطبيق</small></div>${o('digits',[['en','123'],['ar','١٢٣']])}</div>
     <div class="set"><div><b>سعر صرف الدولار</b><small>دينار لكل 1 دولار</small></div><input class="inp num" id="setRate" inputmode="numeric" value="${st.rate}"></div>
@@ -2471,6 +2521,15 @@ V.set=()=>{const st=S.settings,o=(k,opts)=>`<div class="opt">${opts.map(([v,l])=
   ${sec('طريقة التثبيت','',`<button class="btn ghost" data-act="installHelp">📲 كيف أثبّت التطبيق على الآيفون والأندرويد</button>`)}
   <p class="note sign" dir="rtl"><bdi dir="ltr">© ${dg(new Date().getFullYear())}</bdi> ${SIGN}</p>`};
 ACT.setOpt=d=>{S.settings[d.k]=d.v;save();if(d.k==='theme')applyTheme();render(false)};
+ACT.appMode=d=>{
+  if(!['simple','advanced'].includes(d.v))return;
+  S.settings.mode=d.v;
+  if(d.v==='simple'){ensureSimpleWallet();if(!SIMPLE_VIEWS.has(VIEW)){VIEW='home';PARAM=null}}
+  save();buildSideNav();render(false);
+  toast(d.v==='simple'?'تم تفعيل النمط البسيط؛ بياناتك المتقدمة محفوظة.':'تم تفعيل النمط المتقدم؛ عادت كل الأقسام.');
+};
+ACT.salarySet=()=>form({title:'الراتب الشهري الثابت',fields:[{k:'amount',label:'مبلغ الراتب الشهري بالدينار',type:'amount',req:true,focus:true}],values:{amount:S.settings.fixedSalary||''},submit:'حفظ الراتب',
+  onSave:v=>{const amount=toNum(v.amount);if(!Number.isFinite(amount)||amount<0){toast('أدخل مبلغاً صحيحاً غير سالب');return false}S.settings.fixedSalary=amount;save();render(false);toast('تم حفظ الراتب الثابت ✓')}});
 document.addEventListener('change',e=>{
   if(e.target.id==='setRate'){const r=toNum(e.target.value);if(r>0){S.settings.rate=r;save();toast('حُدّث سعر الصرف ✓')}}
   if(e.target.id==='setUser'){S.settings.user=e.target.value.trim();save();greet();toast('تم الحفظ ✓')}
@@ -2488,7 +2547,9 @@ ACT.wipe=()=>{if(!confirm('مسح كل البيانات نهائياً؟ صدّ�
    init
    ===================================================================== */
 function greet(){const h=new Date().getHours();$('#greet').textContent=h<12?'صباح الخير':h<17?'نهارك سعيد':'مساء الخير';$('#uname').textContent=S.settings.user||'أهلاً بك'}
-function buildSideNav(){const L=[['wallets','المحافظ'],['savings','الادخار'],['jam','الجمعيات'],['prop','العقارات'],['debts','الديون والأقساط'],['goals','الأهداف'],['commit','الالتزامات'],['fam','العائلة والأصدقاء'],['inv','الاستثمارات'],['sadaqa','الصدقات'],['zakat','الزكاة'],['tx','الحركات'],['cats','الفئات']];
+function buildSideNav(){
+  $$('nav .in-nav > .nav-sep.d-only, nav .in-nav > button.d-only, nav .in-nav > .nav-sign.d-only').forEach(el=>el.remove());
+  const L=S.settings.mode==='simple'?[['tx','المصروفات'],['cats','فئات الصرف']]:[['wallets','المحافظ'],['savings','الادخار'],['jam','الجمعيات'],['prop','العقارات'],['debts','الديون والأقساط'],['goals','الأهداف'],['commit','الالتزامات'],['fam','العائلة والأصدقاء'],['inv','الاستثمارات'],['sadaqa','الصدقات'],['zakat','الزكاة'],['tx','الحركات'],['cats','الفئات']];
   $('nav .in-nav').insertAdjacentHTML('beforeend',`<div class="nav-sep d-only">الأقسام</div>${L.map(([v,l])=>`<button class="d-only" data-act="go" data-v="${v}" data-nav="${v}">${svgI(v)}${l}</button>`).join('')}
     <div class="nav-sep d-only">أخرى</div><button class="d-only" data-act="report" data-s="all" style="order:97">${svgI('rep')}التقرير الشامل</button>
     <div class="nav-sign d-only" data-act="go" data-v="set">الإصدار ${APP_VER}<br>تصميم وتطوير <b>${DEV}</b></div>`)}
